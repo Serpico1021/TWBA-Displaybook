@@ -121,6 +121,74 @@ h2 {
   gap: 8px;
 }
 
+.library-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.type-pill {
+  min-width: 44px;
+  border: 1px solid rgba(15, 95, 122, 0.22);
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: rgba(15, 95, 122, 0.08);
+  color: var(--defense-focus);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.type-pill[data-type="offense"] {
+  border-color: rgba(214, 95, 0, 0.24);
+  background: rgba(214, 95, 0, 0.09);
+  color: #7a3100;
+}
+
+.playbook-select {
+  min-height: 40px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.library-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.library-actions .icon-text-button {
+  width: 100%;
+  padding: 0 8px;
+}
+
+.library-status {
+  min-height: 18px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.library-status[data-tone="success"] {
+  color: var(--rotation);
+}
+
+.library-status[data-tone="error"] {
+  color: #b42318;
+}
+
 .scenario-list {
   grid-template-columns: 1fr;
 }
@@ -196,6 +264,12 @@ h2 {
   flex: 0 0 auto;
   padding: 0 14px;
   font-weight: 700;
+}
+
+.icon-text-button:disabled,
+.playbook-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .court-svg {
@@ -433,6 +507,10 @@ noscript {
 
   .icon-text-button {
     width: 100%;
+  }
+
+  .library-actions {
+    grid-template-columns: 1fr;
   }
 
   .court-wrap {

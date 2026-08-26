@@ -1,15 +1,15 @@
-(function () {
-  const scenarios = window.TWBA_SCENARIOS || [];
-  const firstScenario = scenarios[0] || {};
+(async function () {
   const roles = ["1", "2", "3", "4", "5"];
   const state = {
-    scenarioId: firstScenario.id || "",
+    library: { playbooks: [], fallback: false, message: "" },
+    playbookId: "",
+    scenarioId: "",
     focusedRole: "all",
     showArrows: true,
     showOffense: true,
     showZones: true,
-    positions: clone(firstScenario.defenders || {}),
-    ball: clone(firstScenario.ball || { x: 50, y: 20 }),
+    positions: {},
+    ball: { x: 50, y: 20 },
     dragTarget: null
   };
 
@@ -21,6 +21,13 @@
   const toggleArrows = document.querySelector("#toggleArrows");
   const toggleOffense = document.querySelector("#toggleOffense");
   const toggleZones = document.querySelector("#toggleZones");
+  const playbookSelect = document.querySelector("#playbookSelect");
+  const playbookType = document.querySelector("#playbookType");
+  const importBtn = document.querySelector("#importBtn");
+  const importFile = document.querySelector("#importFile");
+  const deletePlaybookBtn = document.querySelector("#deletePlaybookBtn");
+  const restoreBtn = document.querySelector("#restoreBtn");
+  const libraryStatus = document.querySelector("#libraryStatus");
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -35,7 +42,18 @@
       .replaceAll("'", "&#039;");
   }
 
+  function getPlaybook() {
+    return state.library.playbooks.find((playbook) => playbook.id === state.playbookId) ||
+      state.library.playbooks[0];
+  }
+
+  function getScenarios() {
+    const playbook = getPlaybook();
+    return playbook ? playbook.scenarios || [] : [];
+  }
+
   function getScenario() {
+    const scenarios = getScenarios();
     return scenarios.find((scenario) => scenario.id === state.scenarioId) || scenarios[0];
   }
 
@@ -43,16 +61,43 @@
     return (scenario.responsibilities && scenario.responsibilities[role]) || {
       where: "当前情景未配置该号码的站位说明。",
       watch: "当前情景未配置该号码的观察重点。",
-      why: "当前情景未配置该号码的防守原因。"
+      why: "当前情景未配置该号码的轮转原因。"
     };
   }
 
   function number(value) {
-    return Number(value).toFixed(1).replace(/\.0$/, "");
+    return Number(value).toFixed(2).replace(/\.?0+$/, "");
   }
 
   function sameRole(role) {
     return state.focusedRole === "all" || state.focusedRole === role;
+  }
+
+  function typeLabel(type) {
+    return type === "offense" ? "进攻" : "防守";
+  }
+
+  function setStatus(message, tone) {
+    libraryStatus.textContent = message || "";
+    libraryStatus.dataset.tone = tone || "";
+  }
+
+  function applyLibrary(library, preferredPlaybookId, preferredScenarioId) {
+    state.library = library;
+    const playbooks = library.playbooks || [];
+    const playbook = playbooks.find((item) => item.id === preferredPlaybookId) || playbooks[0];
+    state.playbookId = playbook ? playbook.id : "";
+    const scenarios = playbook ? playbook.scenarios || [] : [];
+    const scenario = scenarios.find((item) => item.id === preferredScenarioId) || scenarios[0];
+    state.scenarioId = scenario ? scenario.id : "";
+    state.positions = clone((scenario && scenario.defenders) || {});
+    state.ball = clone((scenario && scenario.ball) || { x: 50, y: 20 });
+  }
+
+  async function refreshLibrary(preferredPlaybookId, preferredScenarioId) {
+    const library = await window.TWBAContentService.getLibrary();
+    applyLibrary(library, preferredPlaybookId || state.playbookId, preferredScenarioId || state.scenarioId);
+    render();
   }
 
   function renderCourtLines() {
@@ -164,7 +209,21 @@
     `;
   }
 
+  function renderLibraryControls() {
+    const playbook = getPlaybook();
+    playbookSelect.innerHTML = state.library.playbooks.map((item) => `
+      <option value="${escapeHtml(item.id)}" ${item.id === state.playbookId ? "selected" : ""}>
+        ${escapeHtml(item.title)}
+      </option>
+    `).join("");
+    playbookSelect.disabled = state.library.playbooks.length === 0;
+    playbookType.textContent = playbook ? typeLabel(playbook.type) : "-";
+    playbookType.dataset.type = playbook ? playbook.type : "";
+    deletePlaybookBtn.disabled = !playbook || playbook.source !== "imported";
+  }
+
   function renderScenarioButtons() {
+    const scenarios = getScenarios();
     if (scenarios.length === 0) {
       scenarioList.innerHTML = `<p class="empty-state">暂无情景。</p>`;
       return;
@@ -213,6 +272,7 @@
   }
 
   function render() {
+    renderLibraryControls();
     renderScenarioButtons();
     renderRoleButtons();
     renderCourt();
@@ -220,7 +280,7 @@
   }
 
   function loadScenario(id) {
-    const scenario = scenarios.find((item) => item.id === id);
+    const scenario = getScenarios().find((item) => item.id === id);
     if (!scenario) return;
     state.scenarioId = scenario.id;
     state.positions = clone(scenario.defenders || {});
@@ -230,6 +290,7 @@
 
   function pointFromEvent(event) {
     const svg = court.querySelector("svg");
+    if (!svg) return state.ball;
     const rect = svg.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
@@ -263,6 +324,66 @@
   toggleZones.addEventListener("change", () => {
     state.showZones = toggleZones.checked;
     renderCourt();
+  });
+
+  playbookSelect.addEventListener("change", () => {
+    const playbook = state.library.playbooks.find((item) => item.id === playbookSelect.value);
+    if (!playbook) return;
+    state.playbookId = playbook.id;
+    const scenario = (playbook.scenarios || [])[0];
+    state.scenarioId = scenario ? scenario.id : "";
+    state.positions = clone((scenario && scenario.defenders) || {});
+    state.ball = clone((scenario && scenario.ball) || { x: 50, y: 20 });
+    setStatus("");
+    render();
+  });
+
+  importBtn.addEventListener("click", () => importFile.click());
+
+  importFile.addEventListener("change", async () => {
+    const file = importFile.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const packageData = JSON.parse(text);
+      const incomingId = packageData && packageData.playbook && packageData.playbook.id;
+      const exists = state.library.playbooks.some((playbook) => playbook.id === incomingId);
+      if (exists && !window.confirm("已存在同 ID 战术包，是否替换？")) {
+        setStatus("已取消导入。", "muted");
+        return;
+      }
+      const playbook = await window.TWBAContentService.importPackage(packageData);
+      await refreshLibrary(playbook.id);
+      setStatus(`已导入：${playbook.title}`, "success");
+    } catch (error) {
+      setStatus(`导入失败：${error.message}`, "error");
+    } finally {
+      importFile.value = "";
+    }
+  });
+
+  deletePlaybookBtn.addEventListener("click", async () => {
+    const playbook = getPlaybook();
+    if (!playbook || playbook.source !== "imported") return;
+    if (!window.confirm(`删除导入战术包「${playbook.title}」？`)) return;
+    try {
+      await window.TWBAContentService.deleteImportedPlaybook(playbook.id);
+      await refreshLibrary();
+      setStatus("已删除导入内容。", "success");
+    } catch (error) {
+      setStatus(`删除失败：${error.message}`, "error");
+    }
+  });
+
+  restoreBtn.addEventListener("click", async () => {
+    if (!window.confirm("恢复默认内容会清空已导入战术包，是否继续？")) return;
+    try {
+      await window.TWBAContentService.restoreBuiltin();
+      await refreshLibrary("zone-2-3-rotated-131");
+      setStatus("已恢复内置默认内容。", "success");
+    } catch (error) {
+      setStatus(`恢复失败：${error.message}`, "error");
+    }
   });
 
   court.addEventListener("pointerdown", (event) => {
@@ -303,12 +424,14 @@
     state.dragTarget = null;
   });
 
-  if (scenarios.length > 0) {
+  try {
+    const library = await window.TWBAContentService.init();
+    applyLibrary(library);
     render();
-  } else {
-    renderScenarioButtons();
-    renderRoleButtons();
-    renderCourt();
-    renderExplanation();
+    if (library.message) setStatus(library.message, "error");
+  } catch (error) {
+    court.innerHTML = `<div class="empty-state">内容库初始化失败。</div>`;
+    explanation.innerHTML = `<h2>无法加载</h2><p class="principle">${escapeHtml(error.message)}</p>`;
+    setStatus(`初始化失败：${error.message}`, "error");
   }
 })();

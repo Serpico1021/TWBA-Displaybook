@@ -20,6 +20,21 @@
       </section>
 
       <aside class="side-panel" aria-label="情景与职责说明">
+        <section class="library-panel" aria-label="内容库">
+          <div class="section-title-row">
+            <h2>战术包</h2>
+            <span id="playbookType" class="type-pill">防守</span>
+          </div>
+          <select id="playbookSelect" class="playbook-select" aria-label="选择战术包"></select>
+          <div class="library-actions">
+            <button id="importBtn" class="icon-text-button" type="button">导入 JSON</button>
+            <button id="deletePlaybookBtn" class="icon-text-button" type="button">删除导入</button>
+            <button id="restoreBtn" class="icon-text-button" type="button">恢复默认</button>
+          </div>
+          <input id="importFile" type="file" accept="application/json,.json" hidden>
+          <p id="libraryStatus" class="library-status" aria-live="polite"></p>
+        </section>
+
         <section>
           <h2>情景</h2>
           <div id="scenarioList" class="scenario-list" aria-label="情景列表"></div>
@@ -40,7 +55,10 @@
       </aside>
     </main>
     <noscript>此页面需要启用 JavaScript 才能显示战术情景。</noscript>
-    <script src="./src/scenarios.js"></script>
+    <script src="./src/builtin-content.js"></script>
+    <script src="./src/content-validation.js"></script>
+    <script src="./src/content-db.js"></script>
+    <script src="./src/content-service.js"></script>
     <script src="./src/app.js"></script>
   </body>
 </html>

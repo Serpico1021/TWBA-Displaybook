@@ -1,4 +1,15 @@
-window.TWBA_SCENARIOS = [
+window.TWBA_BUILTIN_PLAYBOOKS = [
+  {
+    schemaVersion: 1,
+    playbook: {
+      id: "zone-2-3-rotated-131",
+      title: "2-3联防：强侧旋转",
+      type: "defense",
+      version: "1.0.0",
+      description: "默认上线两名防守人中1号位相对靠前，整体随强侧上提形成近似旋转后的1-3-1。",
+      source: "builtin"
+    },
+    scenarios: [
   {
     id: "top",
     title: "球在弧顶正中",
@@ -349,5 +360,7 @@ window.TWBA_SCENARIOS = [
       }
     },
     coachNotes: "联防最容易漏篮板，因为不是人盯人；出手瞬间每个人都要先找人。"
+  }
+    ]
   }
 ];
