@@ -1,5 +1,15 @@
 (async function () {
   const roles = ["1", "2", "3", "4", "5"];
+  const markerSize = {
+    offenseRadius: 2.45,
+    defenderRadius: 3.75,
+    defenderHitRadius: 6,
+    ballRadius: 2.15,
+    ballHitRadius: 5.4,
+    ballSeam: 1.7
+  };
+  const offenseVisualOffset = { x: -2.1, y: -1.6 };
+  const ballVisualOffset = { x: 2, y: 1.6 };
   const state = {
     library: { playbooks: [], fallback: false, message: "" },
     playbookId: "",
@@ -128,10 +138,10 @@
 
   function renderOffense(scenario) {
     if (!state.showOffense) return "";
-    return (scenario.offense || []).map((player) => `
-      <g data-marker="offense" class="offense-marker" transform="translate(${number(player.x)} ${number(player.y)})">
-        <circle r="3"></circle>
-        <text y="1.1">${escapeHtml(player.label)}</text>
+    return (scenario.offense || []).map((player, index) => `
+      <g data-marker="offense" class="offense-marker" transform="translate(${number(player.x + offenseVisualOffset.x)} ${number(player.y + offenseVisualOffset.y)})">
+        <circle r="${number(markerSize.offenseRadius)}"></circle>
+        <text y="1">${escapeHtml(String(index + 1))}</text>
       </g>
     `).join("");
   }
@@ -151,14 +161,16 @@
   }
 
   function renderBall() {
-    const x = number(state.ball.x);
-    const y = number(state.ball.y);
+    const hitX = number(state.ball.x);
+    const hitY = number(state.ball.y);
+    const x = state.ball.x + ballVisualOffset.x;
+    const y = state.ball.y + ballVisualOffset.y;
     return `
       <g data-marker="ball" class="ball-marker" tabindex="0" role="button" aria-label="篮球">
-        <circle class="hit-target" cx="${x}" cy="${y}" r="6.5"></circle>
-        <circle cx="${x}" cy="${y}" r="2.7"></circle>
-        <path d="M ${number(state.ball.x - 2.1)} ${y} H ${number(state.ball.x + 2.1)}"></path>
-        <path d="M ${x} ${number(state.ball.y - 2.1)} V ${number(state.ball.y + 2.1)}"></path>
+        <circle class="hit-target" cx="${hitX}" cy="${hitY}" r="${number(markerSize.ballHitRadius)}"></circle>
+        <circle cx="${number(x)}" cy="${number(y)}" r="${number(markerSize.ballRadius)}"></circle>
+        <path d="M ${number(x - markerSize.ballSeam)} ${number(y)} H ${number(x + markerSize.ballSeam)}"></path>
+        <path d="M ${number(x)} ${number(y - markerSize.ballSeam)} V ${number(y + markerSize.ballSeam)}"></path>
       </g>
     `;
   }
@@ -172,9 +184,9 @@
         <g data-marker="defender" data-role="${role}" class="defender-marker ${focusedClass}"
           tabindex="0" role="button" aria-label="${role}号防守人"
           transform="translate(${number(point.x)} ${number(point.y)})">
-          <circle class="hit-target" r="7"></circle>
-          <circle r="4.4"></circle>
-          <text y="1.55">${role}</text>
+          <circle class="hit-target" r="${number(markerSize.defenderHitRadius)}"></circle>
+          <circle r="${number(markerSize.defenderRadius)}"></circle>
+          <text y="1.35">${role}</text>
         </g>
       `;
     }).join("");

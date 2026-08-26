@@ -9,7 +9,7 @@
   --defense: #0f5f7a;
   --defense-focus: #08384a;
   --ball: #d65f00;
-  --offense: #687380;
+  --offense: #9b2c6b;
   --rotation: #007a5a;
   --help: #2458c9;
   --pass: #8b3bb8;
@@ -339,7 +339,7 @@ h2 {
 }
 
 .offense-marker text {
-  fill: #4d5762;
+  fill: #7b1d55;
   font-size: 3px;
   font-weight: 700;
   text-anchor: middle;
