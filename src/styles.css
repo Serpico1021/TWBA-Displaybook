@@ -329,6 +329,7 @@ h2 {
 }
 
 .offense-marker {
+  cursor: grab;
   opacity: 0.88;
 }
 
@@ -346,6 +347,7 @@ h2 {
   pointer-events: none;
 }
 
+.offense-marker .hit-target,
 .ball-marker .hit-target,
 .defender-marker .hit-target {
   fill: transparent;

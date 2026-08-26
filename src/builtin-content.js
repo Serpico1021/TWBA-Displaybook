@@ -136,7 +136,8 @@ window.TWBA_BUILTIN_PLAYBOOKS = [
       { id: "O1", label: "持球", x: 12, y: 79 },
       { id: "O2", label: "45度", x: 27, y: 38 },
       { id: "O3", label: "高位", x: 50, y: 50 },
-      { id: "O4", label: "弱底", x: 88, y: 79 }
+      { id: "O4", label: "弱底", x: 88, y: 79 },
+      { id: "O5", label: "弱45", x: 76, y: 40 }
     ],
     defenders: {
       "1": { x: 24, y: 55, status: "trap-angle" },
@@ -246,29 +247,29 @@ window.TWBA_BUILTIN_PLAYBOOKS = [
   },
   {
     id: "high-post",
-    title: "球进入罚球线 / 高位",
-    principle: "高位接球必须立刻收缩，中路不能让进攻舒服面筐。",
+    title: "5号上提罚球线策应",
+    principle: "5号上提到罚球线策应时，防守先堵中路视野，再用上线收窄和底线收缩切断顺下与短角。",
     ball: { x: 50, y: 51 },
     offense: [
-      { id: "O1", label: "高位", x: 50, y: 51 },
+      { id: "O1", label: "弧顶", x: 50, y: 24 },
       { id: "O2", label: "左45", x: 24, y: 40 },
       { id: "O3", label: "右45", x: 76, y: 40 },
-      { id: "O4", label: "短角", x: 22, y: 78 },
-      { id: "O5", label: "短角", x: 78, y: 78 }
+      { id: "O4", label: "底角", x: 15, y: 79 },
+      { id: "O5", label: "高位策应", x: 50, y: 51 }
     ],
     defenders: {
-      "1": { x: 39, y: 45, status: "pinch" },
-      "2": { x: 61, y: 45, status: "pinch" },
-      "3": { x: 31, y: 75, status: "short-corner" },
-      "4": { x: 69, y: 75, status: "short-corner" },
+      "1": { x: 40, y: 43, status: "pinch" },
+      "2": { x: 60, y: 43, status: "pinch" },
+      "3": { x: 30, y: 74, status: "short-corner" },
+      "4": { x: 70, y: 74, status: "short-corner" },
       "5": { x: 50, y: 58, status: "high-post" }
     },
     arrows: [
       { from: { x: 50, y: 64 }, to: { x: 50, y: 56 }, type: "rotation", roles: ["5"], label: "5号顶高位" },
-      { from: { x: 29, y: 44 }, to: { x: 39, y: 45 }, type: "help", roles: ["1"], label: "1号夹中" },
-      { from: { x: 72, y: 45 }, to: { x: 61, y: 45 }, type: "help", roles: ["2"], label: "2号夹中" },
-      { from: { x: 24, y: 62 }, to: { x: 31, y: 75 }, type: "help", roles: ["3"], label: "3号保短角" },
-      { from: { x: 76, y: 63 }, to: { x: 69, y: 75 }, type: "help", roles: ["4"], label: "4号保短角" }
+      { from: { x: 32, y: 37 }, to: { x: 40, y: 43 }, type: "help", roles: ["1"], label: "1号收窄" },
+      { from: { x: 68, y: 37 }, to: { x: 60, y: 43 }, type: "help", roles: ["2"], label: "2号收窄" },
+      { from: { x: 22, y: 67 }, to: { x: 30, y: 74 }, type: "help", roles: ["3"], label: "3号护短角" },
+      { from: { x: 78, y: 67 }, to: { x: 70, y: 74 }, type: "help", roles: ["4"], label: "4号护弱侧" }
     ],
     zones: [
       { id: "high-post-danger", label: "高位危险区", x: 39, y: 43, width: 22, height: 20, type: "strong" },
@@ -276,32 +277,32 @@ window.TWBA_BUILTIN_PLAYBOOKS = [
     ],
     responsibilities: {
       "1": {
-        where: "从上线向内收，站在高位持球人的左前侧，挡住向同侧外线和篮下的直传。",
-        watch: "看球、同侧45度和持球人转身。",
-        why: "上线收缩可以压缩高位视野，让高位不能轻松做二传。"
+        where: "从前压点回收到罚球线左侧上沿，身体朝球，手干扰5号位回传弧顶。",
+        watch: "看5号位的中轴脚、弧顶1号和左45度回传。",
+        why: "上线不能被高位一接球就打穿，1号收窄后能先压视野，再回扑外线。"
       },
       "2": {
-        where: "从另一侧上线向内夹，和1号形成左右干扰。",
-        watch: "看球、弱侧45度和横传。",
-        why: "2号收缩后，高位持球人很难直接转身面筐或送弱侧空切。"
+        where: "站到罚球线右侧上沿，和1号形成夹中姿态，但脚步保留回扑右45度的角度。",
+        watch: "看5号位转身、右45度空位和横传。",
+        why: "2号收窄能封住高位向弱侧的第一视野，同时避免被简单外传打空。"
       },
       "3": {
-        where: "站到同侧短角与篮下之间，身体朝球也能碰到身后人。",
-        watch: "看短角、篮下切入和底线传球。",
-        why: "5号顶高位时，底线人要先补篮下边缘。"
+        where: "向篮下和左短角之间收一步，身体半侧对球，手能碰到底线传球路线。",
+        watch: "看左底角、左短角和5号位顺下。",
+        why: "高位策应最容易喂短角和顺下，3号先收住背后，再根据传球扑出去。"
       },
       "4": {
-        where: "站到弱侧短角与篮下之间，向篮筐收一步。",
-        watch: "看弱侧短角、背切和篮板。",
-        why: "高位最容易打弱侧背后，4号必须提前收。"
+        where: "从弱侧底线向篮筐收缩，脚踩弱侧短角和篮下之间。",
+        watch: "看右底角、弱侧背切和高位吊篮下。",
+        why: "5号位高位拿球后弱侧背后最危险，4号提前收缩能补最后一道线。"
       },
       "5": {
-        where: "顶到高位持球人正前，脚下稳住，不被一步过掉。",
-        watch: "看球、持球人中轴脚和篮下接应。",
-        why: "高位是2-3联防最危险区域，5号必须先让对方停下来。"
+        where: "顶到进攻5号位正前，身体在球和篮筐之间，脚下稳住不被转身过掉。",
+        watch: "看球、进攻5号位中轴脚、顺下队友和高低位传球。",
+        why: "5号位策应点是2-3联防最危险区域，防守5号必须先堵面筐，再让队友收缩协防。"
       }
     },
-    coachNotes: "高位一接球，全队要从扩张轮转切换为收缩夹中。"
+    coachNotes: "进攻5号位上提时，防守不是五个人一起扑球，而是5号顶、上线夹视野、底线守背后。"
   },
   {
     id: "shot-rebound",
@@ -312,7 +313,8 @@ window.TWBA_BUILTIN_PLAYBOOKS = [
       { id: "O1", label: "投手", x: 70, y: 28 },
       { id: "O2", label: "冲抢", x: 28, y: 63 },
       { id: "O3", label: "冲抢", x: 72, y: 70 },
-      { id: "O4", label: "弱侧", x: 18, y: 78 }
+      { id: "O4", label: "弱侧", x: 18, y: 78 },
+      { id: "O5", label: "篮下", x: 50, y: 72 }
     ],
     defenders: {
       "1": { x: 57, y: 40, status: "long-rebound" },

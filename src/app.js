@@ -2,8 +2,9 @@
   const roles = ["1", "2", "3", "4", "5"];
   const markerSize = {
     offenseRadius: 2.45,
-    defenderRadius: 3.75,
-    defenderHitRadius: 6,
+    offenseHitRadius: 4.6,
+    defenderRadius: 2.9,
+    defenderHitRadius: 5.2,
     ballRadius: 2.15,
     ballHitRadius: 5.4,
     ballSeam: 1.7
@@ -18,6 +19,7 @@
     showArrows: true,
     showOffense: true,
     showZones: true,
+    offensePositions: [],
     positions: {},
     ball: { x: 50, y: 20 },
     dragTarget: null
@@ -41,6 +43,10 @@
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
+  }
+
+  function clonePositions(players) {
+    return (players || []).map((player) => ({ ...player }));
   }
 
   function escapeHtml(value) {
@@ -102,6 +108,7 @@
     state.scenarioId = scenario ? scenario.id : "";
     state.positions = clone((scenario && scenario.defenders) || {});
     state.ball = clone((scenario && scenario.ball) || { x: 50, y: 20 });
+    state.offensePositions = clonePositions((scenario && scenario.offense) || []);
   }
 
   async function refreshLibrary(preferredPlaybookId, preferredScenarioId) {
@@ -138,8 +145,10 @@
 
   function renderOffense(scenario) {
     if (!state.showOffense) return "";
-    return (scenario.offense || []).map((player, index) => `
-      <g data-marker="offense" class="offense-marker" transform="translate(${number(player.x + offenseVisualOffset.x)} ${number(player.y + offenseVisualOffset.y)})">
+    const offense = state.offensePositions.length > 0 ? state.offensePositions : scenario.offense || [];
+    return offense.map((player, index) => `
+      <g data-marker="offense" data-index="${index}" class="offense-marker" transform="translate(${number(player.x + offenseVisualOffset.x)} ${number(player.y + offenseVisualOffset.y)})">
+        <circle class="hit-target" r="${number(markerSize.offenseHitRadius)}"></circle>
         <circle r="${number(markerSize.offenseRadius)}"></circle>
         <text y="1">${escapeHtml(String(index + 1))}</text>
       </g>
@@ -297,6 +306,7 @@
     state.scenarioId = scenario.id;
     state.positions = clone(scenario.defenders || {});
     state.ball = clone(scenario.ball || { x: 50, y: 20 });
+    state.offensePositions = clonePositions(scenario.offense || []);
     render();
   }
 
@@ -309,6 +319,13 @@
     return {
       x: Math.max(2, Math.min(98, Number(x.toFixed(1)))),
       y: Math.max(2, Math.min(98, Number(y.toFixed(1))))
+    };
+  }
+
+  function pointWithoutVisualOffset(point, offset) {
+    return {
+      x: Math.max(2, Math.min(98, Number((point.x - offset.x).toFixed(1)))),
+      y: Math.max(2, Math.min(98, Number((point.y - offset.y).toFixed(1))))
     };
   }
 
@@ -346,6 +363,7 @@
     state.scenarioId = scenario ? scenario.id : "";
     state.positions = clone((scenario && scenario.defenders) || {});
     state.ball = clone((scenario && scenario.ball) || { x: 50, y: 20 });
+    state.offensePositions = clonePositions((scenario && scenario.offense) || []);
     setStatus("");
     render();
   });
@@ -400,9 +418,16 @@
 
   court.addEventListener("pointerdown", (event) => {
     const defender = event.target.closest("[data-marker='defender']");
+    const offense = event.target.closest("[data-marker='offense']");
     const ball = event.target.closest("[data-marker='ball']");
-    if (!defender && !ball) return;
-    state.dragTarget = defender ? { type: "defender", role: defender.dataset.role } : { type: "ball" };
+    if (!defender && !offense && !ball) return;
+    if (defender) {
+      state.dragTarget = { type: "defender", role: defender.dataset.role };
+    } else if (offense) {
+      state.dragTarget = { type: "offense", index: Number(offense.dataset.index) };
+    } else {
+      state.dragTarget = { type: "ball" };
+    }
     court.setPointerCapture(event.pointerId);
   });
 
@@ -415,8 +440,17 @@
         x: point.x,
         y: point.y
       };
+    } else if (state.dragTarget.type === "offense") {
+      const player = state.offensePositions[state.dragTarget.index];
+      if (!player) return;
+      const adjustedPoint = pointWithoutVisualOffset(point, offenseVisualOffset);
+      state.offensePositions[state.dragTarget.index] = {
+        ...player,
+        x: adjustedPoint.x,
+        y: adjustedPoint.y
+      };
     } else {
-      state.ball = point;
+      state.ball = pointWithoutVisualOffset(point, ballVisualOffset);
     }
     renderCourt();
   });
