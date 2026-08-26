@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>2-3联防轮转演示</title>
+    <link rel="stylesheet" href="./src/styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="court-panel" aria-label="FIBA半场战术板">
+        <div class="top-bar">
+          <div>
+            <p class="kicker">TWBA Displaybook</p>
+            <h1>2-3联防轮转演示</h1>
+          </div>
+          <button id="resetBtn" class="icon-text-button" type="button">重置站位</button>
+        </div>
+        <div id="court" class="court-wrap" aria-label="FIBA半场"></div>
+      </section>
+
+      <aside class="side-panel" aria-label="情景与职责说明">
+        <section>
+          <h2>情景</h2>
+          <div id="scenarioList" class="scenario-list" aria-label="情景列表"></div>
+        </section>
+
+        <section>
+          <h2>视角</h2>
+          <div id="roleFilter" class="role-filter" aria-label="号码筛选"></div>
+        </section>
+
+        <section class="display-controls" aria-label="显示控制">
+          <label><input id="toggleArrows" type="checkbox" checked> 轮转箭头</label>
+          <label><input id="toggleOffense" type="checkbox" checked> 进攻参照</label>
+          <label><input id="toggleZones" type="checkbox" checked> 区域高亮</label>
+        </section>
+
+        <section id="explanation" class="explanation" aria-live="polite"></section>
+      </aside>
+    </main>
+    <noscript>此页面需要启用 JavaScript 才能显示战术情景。</noscript>
+    <script src="./src/scenarios.js"></script>
+    <script src="./src/app.js"></script>
+  </body>
+</html>

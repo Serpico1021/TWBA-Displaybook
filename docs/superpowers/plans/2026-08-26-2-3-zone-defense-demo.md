@@ -14,6 +14,10 @@
 
 Implement from `docs/superpowers/specs/2026-08-26-2-3-zone-defense-demo-design.md`.
 
+## Verification Update
+
+User updated the execution constraint after this plan was written: do not install or use Playwright, and do not require npm dependencies. The implemented first version is a directly openable static page verified with JavaScript syntax checks, scenario data validation, and user-operated browser testing.
+
 ## File Structure
 
 - Create `package.json`: development scripts and test dependencies.
