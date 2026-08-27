@@ -1,6 +1,8 @@
 (function () {
   const roles = ["1", "2", "3", "4", "5"];
   const contentTypes = ["defense", "offense"];
+  const arrowTypes = ["rotation", "help", "pass"];
+  const zoneTypes = ["strong", "middle", "last"];
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -57,6 +59,56 @@
     });
   }
 
+  function assertArrows(arrows, scenarioId) {
+    if (arrows === undefined) return;
+    if (!Array.isArray(arrows)) fail(`情景 ${scenarioId} 的 arrows 必须是数组。`);
+    arrows.forEach((arrow, index) => {
+      const label = `情景 ${scenarioId} arrows[${index}]`;
+      if (!isObject(arrow)) fail(`${label} 必须是对象。`);
+      assertCoordinate(arrow.from, `${label}.from`);
+      assertCoordinate(arrow.to, `${label}.to`);
+      if (!arrowTypes.includes(arrow.type)) {
+        fail(`${label}.type 必须是 ${arrowTypes.join("/")} 之一。`);
+      }
+      if (arrow.roles !== undefined) {
+        if (!Array.isArray(arrow.roles) || arrow.roles.length === 0) {
+          fail(`${label}.roles 必须是非空数组。`);
+        }
+        arrow.roles.forEach((role) => {
+          if (!roles.includes(role)) fail(`${label}.roles 包含无效的号码 "${role}"。`);
+        });
+      }
+      if (arrow.label !== undefined) requireText(arrow.label, `${label}.label`);
+    });
+  }
+
+  function assertZones(zones, scenarioId) {
+    if (zones === undefined) return;
+    if (!Array.isArray(zones)) fail(`情景 ${scenarioId} 的 zones 必须是数组。`);
+    zones.forEach((zone, index) => {
+      const label = `情景 ${scenarioId} zones[${index}]`;
+      if (!isObject(zone)) fail(`${label} 必须是对象。`);
+      requireText(zone.label, `${label}.label`);
+      if (!zoneTypes.includes(zone.type)) {
+        fail(`${label}.type 必须是 ${zoneTypes.join("/")} 之一。`);
+      }
+      ["x", "y"].forEach((axis) => {
+        const value = zone[axis];
+        if (typeof value !== "number" || Number.isNaN(value) || value < 0 || value > 100) {
+          fail(`${label}.${axis} 必须是 0 到 100 之间的数字。`);
+        }
+      });
+      ["width", "height"].forEach((axis) => {
+        const value = zone[axis];
+        if (typeof value !== "number" || Number.isNaN(value) || value <= 0) {
+          fail(`${label}.${axis} 必须是大于 0 的数字。`);
+        }
+      });
+      if (zone.x + zone.width > 100) fail(`${label} 的 x + width 不能超过 100。`);
+      if (zone.y + zone.height > 100) fail(`${label} 的 y + height 不能超过 100。`);
+    });
+  }
+
   function normalizePackageSource(packageData, source) {
     const normalized = clone(packageData);
     normalized.playbook = normalized.playbook || {};
@@ -92,6 +144,8 @@
       assertCoordinateList(item.offense, `情景 ${item.id} offense`);
       assertDefenders(item.defenders, item.id);
       assertResponsibilities(item.responsibilities, item.id);
+      assertArrows(item.arrows, item.id);
+      assertZones(item.zones, item.id);
       return item;
     });
 
