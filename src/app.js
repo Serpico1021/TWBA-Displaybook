@@ -11,12 +11,24 @@
   };
   const offenseVisualOffset = { x: -2.1, y: -1.6 };
   const ballVisualOffset = { x: 2, y: 1.6 };
+  const DRAW_COLORS = ["#eef1f5", "#ffd447", "#ff5c5c", "#33b1ff"];
+  const DRAW_WIDTHS = [
+    { value: 0.5, label: "细" },
+    { value: 1, label: "中" },
+    { value: 1.8, label: "粗" }
+  ];
   const state = {
     library: { playbooks: [], fallback: false, message: "" },
     playbookId: "",
     scenarioId: "",
     focusedRole: "all",
     editMode: false,
+    drawMode: false,
+    drawColor: DRAW_COLORS[0],
+    drawWidth: DRAW_WIDTHS[1].value,
+    strokes: [],
+    isDrawingStroke: false,
+    arrows: [],
     showArrows: true,
     showOffense: true,
     showZones: true,
@@ -32,6 +44,7 @@
   const explanation = document.querySelector("#explanation");
   const resetBtn = document.querySelector("#resetBtn");
   const editModeBtn = document.querySelector("#editModeBtn");
+  const drawModeBtn = document.querySelector("#drawModeBtn");
   const toggleArrows = document.querySelector("#toggleArrows");
   const toggleOffense = document.querySelector("#toggleOffense");
   const toggleZones = document.querySelector("#toggleZones");
@@ -111,6 +124,8 @@
     state.positions = clone((scenario && scenario.defenders) || {});
     state.ball = clone((scenario && scenario.ball) || { x: 50, y: 20 });
     state.offensePositions = clonePositions((scenario && scenario.offense) || []);
+    state.arrows = clone((scenario && scenario.arrows) || []);
+    state.strokes = [];
   }
 
   async function refreshLibrary(preferredPlaybookId, preferredScenarioId) {
@@ -157,10 +172,10 @@
     `).join("");
   }
 
-  function renderArrows(scenario) {
+  function renderArrows() {
     if (!state.showArrows) return "";
-    return (scenario.arrows || [])
-      .filter((arrow) => state.focusedRole === "all" || (arrow.roles || []).includes(state.focusedRole))
+    return state.arrows
+      .filter((arrow) => state.editMode || state.focusedRole === "all" || (arrow.roles || []).includes(state.focusedRole))
       .map((arrow) => `
         <line class="arrow arrow-${escapeHtml(arrow.type)}"
           x1="${number(arrow.from.x)}" y1="${number(arrow.from.y)}"
@@ -203,6 +218,40 @@
     }).join("");
   }
 
+  function renderDrawLayer() {
+    return state.strokes.map((stroke) => {
+      if (stroke.points.length === 1) {
+        const point = stroke.points[0];
+        return `<circle class="draw-stroke draw-dot" cx="${number(point.x)}" cy="${number(point.y)}" r="${number(stroke.width)}" fill="${escapeHtml(stroke.color)}"></circle>`;
+      }
+      if (stroke.points.length < 2) return "";
+      const d = stroke.points
+        .map((point, index) => `${index === 0 ? "M" : "L"} ${number(point.x)} ${number(point.y)}`)
+        .join(" ");
+      return `<path class="draw-stroke" d="${d}" stroke="${escapeHtml(stroke.color)}" stroke-width="${number(stroke.width)}"></path>`;
+    }).join("");
+  }
+
+  function renderDrawToolbar() {
+    if (!state.drawMode) return "";
+    const swatches = DRAW_COLORS.map((color) => `
+      <button type="button" class="draw-swatch" data-draw-color="${color}" style="background:${color}"
+        aria-pressed="${state.drawColor === color}" aria-label="选择画笔颜色"></button>
+    `).join("");
+    const widths = DRAW_WIDTHS.map((item) => `
+      <button type="button" class="icon-only" data-draw-width="${item.value}" aria-pressed="${state.drawWidth === item.value}">${item.label}</button>
+    `).join("");
+    return `
+      <div class="draw-toolbar">
+        ${swatches}
+        <span class="draw-divider"></span>
+        ${widths}
+        <span class="draw-divider"></span>
+        <button type="button" class="draw-clear" data-draw-clear>清除</button>
+      </div>
+    `;
+  }
+
   function renderCourt() {
     const scenario = getScenario();
     if (!scenario) {
@@ -225,10 +274,12 @@
         ${renderCourtLines()}
         ${renderZones(scenario)}
         ${renderOffense(scenario)}
-        ${renderArrows(scenario)}
+        ${renderArrows()}
         ${renderBall()}
         ${renderDefenders()}
+        ${renderDrawLayer()}
       </svg>
+      ${renderDrawToolbar()}
     `;
   }
 
@@ -267,6 +318,44 @@
     }).join("");
   }
 
+  function arrowTypeLabel(type) {
+    return { rotation: "轮转", help: "协防", pass: "传球" }[type] || type;
+  }
+
+  function renderArrowRows() {
+    if (state.arrows.length === 0) {
+      return `<p class="empty-state">暂无箭头，在球场空白处拖拽绘制。</p>`;
+    }
+    return state.arrows.map((arrow, index) => {
+      const roleChips = roles.map((role) => `
+        <button type="button" class="chip" data-arrow-role="${role}" data-arrow-index="${index}"
+          aria-pressed="${(arrow.roles || []).includes(role)}">${role}</button>
+      `).join("");
+      return `
+        <fieldset class="editor-arrow">
+          <label>类型
+            <select data-arrow-field="type" data-arrow-index="${index}">
+              ${["rotation", "help", "pass"].map((type) => `
+                <option value="${type}" ${arrow.type === type ? "selected" : ""}>${arrowTypeLabel(type)}</option>
+              `).join("")}
+            </select>
+          </label>
+          <label>说明
+            <input type="text" data-arrow-field="label" data-arrow-index="${index}"
+              value="${escapeHtml(arrow.label || "")}" placeholder="例如：1号前压">
+          </label>
+          <div class="editor-arrow-roles" aria-label="适用视角，不选则所有视角可见">${roleChips}</div>
+          <button type="button" class="icon-text-button" data-delete-arrow="${index}">删除箭头</button>
+        </fieldset>
+      `;
+    }).join("");
+  }
+
+  function refreshArrowEditorList() {
+    const container = explanation.querySelector("[data-arrows-list]");
+    if (container) container.innerHTML = renderArrowRows();
+  }
+
   function renderExplanationEditor(scenario) {
     const cards = roles.map((role) => {
       const item = getResponsibility(scenario, role);
@@ -295,6 +384,11 @@
           <textarea data-edit-field="principle" rows="2">${escapeHtml(scenario.principle || "")}</textarea>
         </label>
         ${cards}
+        <div class="editor-arrows">
+          <h3>轮转箭头</h3>
+          <p class="editor-hint">在球场空白处拖拽绘制新箭头；保存后成为该情景的默认箭头，非临时标注。</p>
+          <div data-arrows-list>${renderArrowRows()}</div>
+        </div>
         <label>教练备注
           <textarea data-edit-field="coachNotes" rows="2">${escapeHtml(scenario.coachNotes || "")}</textarea>
         </label>
@@ -340,7 +434,9 @@
 
   function render() {
     editModeBtn.setAttribute("aria-pressed", String(state.editMode));
+    drawModeBtn.setAttribute("aria-pressed", String(state.drawMode));
     court.classList.toggle("is-editing", state.editMode);
+    court.classList.toggle("is-drawing", state.drawMode);
     renderLibraryControls();
     renderScenarioButtons();
     renderRoleButtons();
@@ -355,6 +451,8 @@
     state.positions = clone(scenario.defenders || {});
     state.ball = clone(scenario.ball || { x: 50, y: 20 });
     state.offensePositions = clonePositions(scenario.offense || []);
+    state.arrows = clone(scenario.arrows || []);
+    state.strokes = [];
     render();
   }
 
@@ -392,14 +490,74 @@
   resetBtn.addEventListener("click", () => loadScenario(state.scenarioId));
   editModeBtn.addEventListener("click", () => {
     state.editMode = !state.editMode;
+    if (state.editMode) state.drawMode = false;
     render();
+  });
+  drawModeBtn.addEventListener("click", () => {
+    state.drawMode = !state.drawMode;
+    if (state.drawMode) state.editMode = false;
+    render();
+  });
+
+  court.addEventListener("click", (event) => {
+    const swatch = event.target.closest("[data-draw-color]");
+    if (swatch) {
+      state.drawColor = swatch.dataset.drawColor;
+      renderCourt();
+      return;
+    }
+    const widthBtn = event.target.closest("[data-draw-width]");
+    if (widthBtn) {
+      state.drawWidth = Number(widthBtn.dataset.drawWidth);
+      renderCourt();
+      return;
+    }
+    if (event.target.closest("[data-draw-clear]")) {
+      state.strokes = [];
+      renderCourt();
+    }
   });
 
   explanation.addEventListener("click", (event) => {
     if (event.target.closest("[data-edit-cancel]")) {
       state.editMode = false;
       render();
+      return;
     }
+    const deleteArrowBtn = event.target.closest("[data-delete-arrow]");
+    if (deleteArrowBtn) {
+      state.arrows.splice(Number(deleteArrowBtn.dataset.deleteArrow), 1);
+      renderCourt();
+      refreshArrowEditorList();
+      return;
+    }
+    const roleChip = event.target.closest("[data-arrow-role]");
+    if (roleChip) {
+      const arrow = state.arrows[Number(roleChip.dataset.arrowIndex)];
+      if (!arrow) return;
+      const roleSet = new Set(arrow.roles || []);
+      const role = roleChip.dataset.arrowRole;
+      if (roleSet.has(role)) roleSet.delete(role); else roleSet.add(role);
+      if (roleSet.size === 0) delete arrow.roles; else arrow.roles = Array.from(roleSet);
+      renderCourt();
+      refreshArrowEditorList();
+    }
+  });
+
+  explanation.addEventListener("change", (event) => {
+    const typeSelect = event.target.closest('[data-arrow-field="type"]');
+    if (!typeSelect) return;
+    const arrow = state.arrows[Number(typeSelect.dataset.arrowIndex)];
+    if (!arrow) return;
+    arrow.type = typeSelect.value;
+    renderCourt();
+  });
+
+  explanation.addEventListener("input", (event) => {
+    const labelInput = event.target.closest('[data-arrow-field="label"]');
+    if (!labelInput) return;
+    const arrow = state.arrows[Number(labelInput.dataset.arrowIndex)];
+    if (arrow) arrow.label = labelInput.value;
   });
 
   explanation.addEventListener("submit", async (event) => {
@@ -417,6 +575,17 @@
         why: form.querySelector(`[data-edit-field="why"][data-role="${role}"]`).value.trim()
       };
     });
+    const arrows = state.arrows.map((arrow) => {
+      const clean = {
+        from: { x: arrow.from.x, y: arrow.from.y },
+        to: { x: arrow.to.x, y: arrow.to.y },
+        type: arrow.type || "rotation"
+      };
+      if (arrow.roles && arrow.roles.length > 0) clean.roles = arrow.roles;
+      const label = (arrow.label || "").trim();
+      if (label) clean.label = label;
+      return clean;
+    });
     const patch = {
       title: form.querySelector('[data-edit-field="title"]').value.trim(),
       principle: form.querySelector('[data-edit-field="principle"]').value.trim(),
@@ -424,7 +593,8 @@
       responsibilities,
       defenders: clone(state.positions),
       offense: clonePositions(state.offensePositions),
-      ball: clone(state.ball)
+      ball: clone(state.ball),
+      arrows
     };
 
     const saveButton = form.querySelector("[data-edit-save]");
@@ -461,6 +631,8 @@
     state.positions = clone((scenario && scenario.defenders) || {});
     state.ball = clone((scenario && scenario.ball) || { x: 50, y: 20 });
     state.offensePositions = clonePositions((scenario && scenario.offense) || []);
+    state.arrows = clone((scenario && scenario.arrows) || []);
+    state.strokes = [];
     setStatus("");
     render();
   });
@@ -514,10 +686,27 @@
   });
 
   court.addEventListener("pointerdown", (event) => {
+    if (state.drawMode) {
+      if (event.target.closest(".draw-toolbar")) return;
+      const point = pointFromEvent(event);
+      state.strokes.push({ color: state.drawColor, width: state.drawWidth, points: [point] });
+      state.isDrawingStroke = true;
+      court.setPointerCapture(event.pointerId);
+      renderCourt();
+      return;
+    }
     const defender = event.target.closest("[data-marker='defender']");
     const offense = event.target.closest("[data-marker='offense']");
     const ball = event.target.closest("[data-marker='ball']");
-    if (!defender && !offense && !ball) return;
+    if (!defender && !offense && !ball) {
+      if (state.editMode) {
+        const point = pointFromEvent(event);
+        state.arrows.push({ from: point, to: point, type: "rotation", label: "" });
+        state.dragTarget = { type: "arrow", index: state.arrows.length - 1 };
+        court.setPointerCapture(event.pointerId);
+      }
+      return;
+    }
     if (defender) {
       state.dragTarget = { type: "defender", role: defender.dataset.role };
     } else if (offense) {
@@ -529,6 +718,13 @@
   });
 
   court.addEventListener("pointermove", (event) => {
+    if (state.drawMode) {
+      if (!state.isDrawingStroke) return;
+      const point = pointFromEvent(event);
+      state.strokes[state.strokes.length - 1].points.push(point);
+      renderCourt();
+      return;
+    }
     if (!state.dragTarget) return;
     const point = pointFromEvent(event);
     if (state.dragTarget.type === "defender") {
@@ -546,25 +742,47 @@
         x: adjustedPoint.x,
         y: adjustedPoint.y
       };
+    } else if (state.dragTarget.type === "arrow") {
+      state.arrows[state.dragTarget.index].to = point;
     } else {
       state.ball = pointWithoutVisualOffset(point, ballVisualOffset);
     }
     renderCourt();
   });
 
+  function discardEmptyDraftArrow() {
+    if (!state.dragTarget || state.dragTarget.type !== "arrow") return;
+    const arrow = state.arrows[state.dragTarget.index];
+    if (!arrow) return;
+    const dx = arrow.to.x - arrow.from.x;
+    const dy = arrow.to.y - arrow.from.y;
+    if (Math.hypot(dx, dy) < 3) state.arrows.splice(state.dragTarget.index, 1);
+  }
+
   court.addEventListener("pointerup", (event) => {
+    const wasDrawingArrow = state.dragTarget && state.dragTarget.type === "arrow";
+    discardEmptyDraftArrow();
     state.dragTarget = null;
+    state.isDrawingStroke = false;
     if (court.hasPointerCapture(event.pointerId)) {
       court.releasePointerCapture(event.pointerId);
+    }
+    if (wasDrawingArrow) {
+      renderCourt();
+      refreshArrowEditorList();
     }
   });
 
   court.addEventListener("pointercancel", () => {
+    discardEmptyDraftArrow();
     state.dragTarget = null;
+    state.isDrawingStroke = false;
   });
 
   court.addEventListener("lostpointercapture", () => {
+    discardEmptyDraftArrow();
     state.dragTarget = null;
+    state.isDrawingStroke = false;
   });
 
   try {

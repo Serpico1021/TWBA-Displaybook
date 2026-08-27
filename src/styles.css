@@ -164,6 +164,12 @@ h2 {
   box-shadow: 0 0 0 1px var(--defense), var(--shadow);
 }
 
+.court-wrap.is-drawing {
+  cursor: crosshair;
+  border-color: var(--ball);
+  box-shadow: 0 0 0 1px var(--ball), var(--shadow);
+}
+
 .side-panel {
   display: flex;
   flex-direction: column;
@@ -529,6 +535,7 @@ h2 {
 }
 
 .scenario-editor input,
+.scenario-editor select,
 .scenario-editor textarea {
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -564,6 +571,58 @@ h2 {
   line-height: 1.5;
 }
 
+.editor-arrows {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+}
+
+.editor-arrows h3 {
+  margin: 0;
+  color: var(--rotation);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.editor-arrow {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.editor-arrow-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.editor-arrow-roles .chip {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.editor-arrow-roles .chip[aria-pressed="true"] {
+  border-color: var(--rotation);
+  background: rgba(34, 211, 184, 0.16);
+  color: var(--rotation);
+  font-weight: 700;
+}
+
 .edit-actions {
   display: flex;
   gap: 8px;
@@ -595,9 +654,11 @@ noscript {
   color: var(--danger);
 }
 
-/* Forward design spec: playback transport (dynamic replay), tactical
-   annotation glyphs, and the freehand draw toolbar. Not wired to JS yet;
-   these classes are the visual contract for those features. */
+/* Forward design spec: playback transport (dynamic replay) and tactical
+   annotation glyphs. Not wired to JS yet; these classes are the visual
+   contract for those features. The freehand draw toolbar below this
+   block (.draw-toolbar / .draw-swatch / .draw-clear / .draw-stroke) is
+   wired up in app.js. */
 
 .transport-bar {
   display: flex;
@@ -736,7 +797,38 @@ noscript {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   color: var(--ink);
+  font-size: 11px;
   cursor: pointer;
+}
+
+.draw-toolbar button.icon-only[aria-pressed="true"] {
+  border-color: var(--ball);
+  color: var(--ball);
+}
+
+.draw-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--line);
+}
+
+.draw-clear {
+  min-height: 26px;
+  padding: 0 8px;
+  white-space: nowrap;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.draw-stroke {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
 }
 
 @media (min-width: 1200px) {
