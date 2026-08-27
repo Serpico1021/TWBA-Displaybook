@@ -116,16 +116,7 @@
     });
   }
 
-  async function clearAll() {
-    const db = await open();
-    const transaction = db.transaction(["playbooks", "scenarios"], "readwrite");
-    transaction.objectStore("playbooks").clear();
-    transaction.objectStore("scenarios").clear();
-    await transactionDone(transaction);
-  }
-
   window.TWBAContentDB = {
-    clearAll,
     deletePlaybook,
     getPlaybooks,
     getScenarios,

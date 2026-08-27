@@ -68,7 +68,6 @@
   const importBtn = document.querySelector("#importBtn");
   const importFile = document.querySelector("#importFile");
   const deletePlaybookBtn = document.querySelector("#deletePlaybookBtn");
-  const restoreBtn = document.querySelector("#restoreBtn");
   const exportPlaybookBtn = document.querySelector("#exportPlaybookBtn");
   const exportCustomContentBtn = document.querySelector("#exportCustomContentBtn");
   const newDefensePlaybookBtn = document.querySelector("#newDefensePlaybookBtn");
@@ -1202,17 +1201,6 @@
       setStatus("已删除导入内容。", "success");
     } catch (error) {
       setStatus(`删除失败：${error.message}`, "error");
-    }
-  });
-
-  restoreBtn.addEventListener("click", async () => {
-    if (!window.confirm("恢复默认内容会清空已导入战术包，是否继续？")) return;
-    try {
-      await window.TWBAContentService.restoreBuiltin();
-      await refreshLibrary("zone-2-3-rotated-131");
-      setStatus("已恢复内置默认内容。", "success");
-    } catch (error) {
-      setStatus(`恢复失败：${error.message}`, "error");
     }
   });
 

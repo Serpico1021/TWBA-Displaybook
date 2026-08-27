@@ -188,16 +188,6 @@
     await db.deletePlaybook(playbookId);
   }
 
-  async function restoreBuiltin() {
-    const prepared = builtinPackages.map((contentPackage) => preparePackage(contentPackage, "builtin"));
-    if (fallback) {
-      memoryPackages = prepared;
-      return;
-    }
-    await db.clearAll();
-    await Promise.all(prepared.map((contentPackage) => db.savePackage(contentPackage)));
-  }
-
   window.TWBAContentService = {
     addScenario,
     deleteImportedPlaybook,
@@ -206,7 +196,6 @@
     getPlaybook,
     importPackage,
     init,
-    restoreBuiltin,
     updateScenario
   };
 })();
