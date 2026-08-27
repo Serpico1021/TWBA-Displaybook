@@ -2,6 +2,7 @@
   const roles = ["1", "2", "3", "4", "5"];
   const contentTypes = ["defense", "offense"];
   const arrowTypes = ["rotation", "help", "pass"];
+  const arrowStyles = ["solid", "dashed", "wavy", "screen"];
   const zoneTypes = ["strong", "middle", "last"];
 
   function clone(value) {
@@ -70,6 +71,9 @@
       if (!arrowTypes.includes(arrow.type)) {
         fail(`${label}.type 必须是 ${arrowTypes.join("/")} 之一。`);
       }
+      if (arrow.style !== undefined && !arrowStyles.includes(arrow.style)) {
+        fail(`${label}.style 必须是 ${arrowStyles.join("/")} 之一。`);
+      }
       if (arrow.roles !== undefined) {
         if (!Array.isArray(arrow.roles) || arrow.roles.length === 0) {
           fail(`${label}.roles 必须是非空数组。`);
@@ -106,6 +110,9 @@
       });
       if (zone.x + zone.width > 100) fail(`${label} 的 x + width 不能超过 100。`);
       if (zone.y + zone.height > 100) fail(`${label} 的 y + height 不能超过 100。`);
+      if (zone.rotation !== undefined && (typeof zone.rotation !== "number" || Number.isNaN(zone.rotation))) {
+        fail(`${label}.rotation 必须是数字。`);
+      }
     });
   }
 

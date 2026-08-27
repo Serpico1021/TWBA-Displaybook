@@ -23,12 +23,14 @@
     scenarioId: "",
     focusedRole: "all",
     editMode: false,
+    editTool: "none",
     drawMode: false,
     drawColor: DRAW_COLORS[0],
     drawWidth: DRAW_WIDTHS[1].value,
     strokes: [],
     isDrawingStroke: false,
     arrows: [],
+    zones: [],
     showArrows: true,
     showOffense: true,
     showZones: true,
@@ -127,7 +129,9 @@
     state.ball = clone((scenario && scenario.ball) || { x: 50, y: 20 });
     state.offensePositions = clonePositions((scenario && scenario.offense) || []);
     state.arrows = clone((scenario && scenario.arrows) || []);
+    state.zones = clone((scenario && scenario.zones) || []);
     state.strokes = [];
+    state.editTool = "none";
   }
 
   async function refreshLibrary(preferredPlaybookId, preferredScenarioId) {
@@ -152,14 +156,43 @@
     `;
   }
 
-  function renderZones(scenario) {
+  function zoneCenter(zone) {
+    return { cx: zone.x + zone.width / 2, cy: zone.y + zone.height / 2 };
+  }
+
+  function zoneRotateAttr(zone) {
+    if (!zone.rotation) return "";
+    const { cx, cy } = zoneCenter(zone);
+    return ` transform="rotate(${number(zone.rotation)} ${number(cx)} ${number(cy)})"`;
+  }
+
+  function renderZones() {
     if (!state.showZones) return "";
-    return (scenario.zones || []).map((zone) => `
-      <g class="zone-group">
+    const bodies = state.zones.map((zone) => `
+      <g class="zone-group"${zoneRotateAttr(zone)}>
         <rect class="zone zone-${escapeHtml(zone.type)}" x="${number(zone.x)}" y="${number(zone.y)}" width="${number(zone.width)}" height="${number(zone.height)}"></rect>
-        <text class="zone-label" x="${number(zone.x + zone.width / 2)}" y="${number(zone.y + 5)}">${escapeHtml(zone.label)}</text>
+        <text class="zone-label" x="${number(zoneCenter(zone).cx)}" y="${number(zone.y + 5)}">${escapeHtml(zone.label)}</text>
       </g>
     `).join("");
+
+    if (!(state.editMode && state.editTool === "zone")) return bodies;
+
+    const handles = state.zones.map((zone, index) => {
+      const { cx, cy } = zoneCenter(zone);
+      return `
+        <g class="zone-handle-group"${zoneRotateAttr(zone)}>
+          <line class="zone-handle-rotate-stem" x1="${number(cx)}" y1="${number(zone.y)}" x2="${number(cx)}" y2="${number(zone.y - 6)}"></line>
+          <circle class="zone-handle zone-handle-rotate" data-marker="zone-rotate" data-index="${index}"
+            cx="${number(cx)}" cy="${number(zone.y - 6)}" r="1.8"></circle>
+          <rect class="zone-handle zone-handle-move" data-marker="zone-move" data-index="${index}"
+            x="${number(cx - 2.5)}" y="${number(cy - 2.5)}" width="5" height="5"></rect>
+          <rect class="zone-handle zone-handle-resize" data-marker="zone-resize" data-index="${index}"
+            x="${number(zone.x + zone.width - 2)}" y="${number(zone.y + zone.height - 2)}" width="4" height="4"></rect>
+        </g>
+      `;
+    }).join("");
+
+    return bodies + handles;
   }
 
   function renderOffense(scenario) {
@@ -174,18 +207,84 @@
     `).join("");
   }
 
+  function buildWavyPath(from, to) {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const len = Math.hypot(dx, dy) || 0.001;
+    const ux = dx / len;
+    const uy = dy / len;
+    const px = -uy;
+    const py = ux;
+    const amplitude = 1.6;
+    const waves = Math.max(2, Math.round(len / 6));
+    let d = `M ${number(from.x)} ${number(from.y)}`;
+    for (let i = 0; i < waves; i++) {
+      const sign = i % 2 === 0 ? 1 : -1;
+      const tMid = (i + 0.5) / waves;
+      const tEnd = (i + 1) / waves;
+      const midX = from.x + dx * tMid + px * amplitude * sign;
+      const midY = from.y + dy * tMid + py * amplitude * sign;
+      const endX = from.x + dx * tEnd;
+      const endY = from.y + dy * tEnd;
+      d += ` Q ${number(midX)} ${number(midY)} ${number(endX)} ${number(endY)}`;
+    }
+    return d;
+  }
+
+  function screenBarPoints(from, to) {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const len = Math.hypot(dx, dy) || 0.001;
+    const px = -(dy / len);
+    const py = dx / len;
+    const half = 2.4;
+    return {
+      x1: to.x + px * half,
+      y1: to.y + py * half,
+      x2: to.x - px * half,
+      y2: to.y - py * half
+    };
+  }
+
+  function renderArrow(arrow) {
+    const style = arrow.style || "solid";
+    const typeClass = `arrow-${escapeHtml(arrow.type)}`;
+    const title = `<title>${escapeHtml(arrow.label || arrow.type)}</title>`;
+
+    if (style === "wavy") {
+      return `
+        <path class="arrow arrow-wavy ${typeClass}" d="${buildWavyPath(arrow.from, arrow.to)}"
+          marker-end="url(#arrow-${escapeHtml(arrow.type)})">${title}</path>
+      `;
+    }
+
+    if (style === "screen") {
+      const bar = screenBarPoints(arrow.from, arrow.to);
+      return `
+        <g class="arrow-screen-group">
+          <line class="arrow arrow-screen ${typeClass}"
+            x1="${number(arrow.from.x)}" y1="${number(arrow.from.y)}"
+            x2="${number(arrow.to.x)}" y2="${number(arrow.to.y)}">${title}</line>
+          <line class="arrow-screen-bar ${typeClass}"
+            x1="${number(bar.x1)}" y1="${number(bar.y1)}" x2="${number(bar.x2)}" y2="${number(bar.y2)}"></line>
+        </g>
+      `;
+    }
+
+    const dashClass = style === "dashed" ? "arrow-dashed" : "";
+    return `
+      <line class="arrow ${typeClass} ${dashClass}"
+        x1="${number(arrow.from.x)}" y1="${number(arrow.from.y)}"
+        x2="${number(arrow.to.x)}" y2="${number(arrow.to.y)}"
+        marker-end="url(#arrow-${escapeHtml(arrow.type)})">${title}</line>
+    `;
+  }
+
   function renderArrows() {
     if (!state.showArrows) return "";
     return state.arrows
       .filter((arrow) => state.editMode || state.focusedRole === "all" || (arrow.roles || []).includes(state.focusedRole))
-      .map((arrow) => `
-        <line class="arrow arrow-${escapeHtml(arrow.type)}"
-          x1="${number(arrow.from.x)}" y1="${number(arrow.from.y)}"
-          x2="${number(arrow.to.x)}" y2="${number(arrow.to.y)}"
-          marker-end="url(#arrow-${escapeHtml(arrow.type)})">
-          <title>${escapeHtml(arrow.label || arrow.type)}</title>
-        </line>
-      `).join("");
+      .map((arrow) => renderArrow(arrow)).join("");
   }
 
   function renderBall() {
@@ -255,6 +354,8 @@
   }
 
   function renderCourt() {
+    court.classList.toggle("is-tool-arrow", state.editMode && state.editTool === "arrow");
+    court.classList.toggle("is-tool-zone", state.editMode && state.editTool === "zone");
     const scenario = getScenario();
     if (!scenario) {
       court.innerHTML = `<div class="empty-state">暂无战术情景数据。</div>`;
@@ -274,7 +375,7 @@
           </marker>
         </defs>
         ${renderCourtLines()}
-        ${renderZones(scenario)}
+        ${renderZones()}
         ${renderOffense(scenario)}
         ${renderArrows()}
         ${renderBall()}
@@ -327,9 +428,13 @@
     return { rotation: "轮转", help: "协防", pass: "传球" }[type] || type;
   }
 
+  function arrowStyleLabel(style) {
+    return { solid: "实线·跑动", dashed: "虚线·掩护跑位", wavy: "波浪线·运球", screen: "挡拆·丁字" }[style] || style;
+  }
+
   function renderArrowRows() {
     if (state.arrows.length === 0) {
-      return `<p class="empty-state">暂无箭头，在球场空白处拖拽绘制。</p>`;
+      return `<p class="empty-state">暂无箭头，点击下方按钮后在球场空白处拖拽绘制。</p>`;
     }
     return state.arrows.map((arrow, index) => {
       const roleChips = roles.map((role) => `
@@ -342,6 +447,13 @@
             <select data-arrow-field="type" data-arrow-index="${index}">
               ${["rotation", "help", "pass"].map((type) => `
                 <option value="${type}" ${arrow.type === type ? "selected" : ""}>${arrowTypeLabel(type)}</option>
+              `).join("")}
+            </select>
+          </label>
+          <label>线型
+            <select data-arrow-field="style" data-arrow-index="${index}">
+              ${["solid", "dashed", "wavy", "screen"].map((style) => `
+                <option value="${style}" ${(arrow.style || "solid") === style ? "selected" : ""}>${arrowStyleLabel(style)}</option>
               `).join("")}
             </select>
           </label>
@@ -359,6 +471,37 @@
   function refreshArrowEditorList() {
     const container = explanation.querySelector("[data-arrows-list]");
     if (container) container.innerHTML = renderArrowRows();
+  }
+
+  function zoneTypeLabel(type) {
+    return { strong: "强侧", middle: "中路", last: "底线" }[type] || type;
+  }
+
+  function renderZoneRows() {
+    if (state.zones.length === 0) {
+      return `<p class="empty-state">暂无区域高亮，点击"新增区域"后可在球场上拖动方块调整位置和大小。</p>`;
+    }
+    return state.zones.map((zone, index) => `
+      <fieldset class="editor-arrow">
+        <label>类型
+          <select data-zone-field="type" data-zone-index="${index}">
+            ${["strong", "middle", "last"].map((type) => `
+              <option value="${type}" ${zone.type === type ? "selected" : ""}>${zoneTypeLabel(type)}</option>
+            `).join("")}
+          </select>
+        </label>
+        <label>名称
+          <input type="text" data-zone-field="label" data-zone-index="${index}"
+            value="${escapeHtml(zone.label || "")}" placeholder="例如：强侧压迫">
+        </label>
+        <button type="button" class="icon-text-button" data-delete-zone="${index}">删除区域</button>
+      </fieldset>
+    `).join("");
+  }
+
+  function refreshZoneEditorList() {
+    const container = explanation.querySelector("[data-zones-list]");
+    if (container) container.innerHTML = renderZoneRows();
   }
 
   function renderExplanationEditor(scenario) {
@@ -382,6 +525,10 @@
 
     explanation.innerHTML = `
       <form class="scenario-editor" data-scenario-editor>
+        <div class="edit-actions edit-actions--sticky">
+          <button type="submit" class="icon-text-button" data-edit-save>保存修改</button>
+          <button type="button" class="icon-text-button" data-edit-cancel>取消</button>
+        </div>
         <label>情景标题
           <input type="text" data-edit-field="title" value="${escapeHtml(scenario.title)}">
         </label>
@@ -391,17 +538,27 @@
         ${cards}
         <div class="editor-arrows">
           <h3>轮转箭头</h3>
-          <p class="editor-hint">在球场空白处拖拽绘制新箭头；保存后成为该情景的默认箭头，非临时标注。</p>
+          <p class="editor-hint">开启绘制后，在球场空白处拖拽即可新增箭头；保存后成为该情景的默认标注，非临时讲解。</p>
+          <button type="button" class="icon-text-button editor-tool-toggle" data-toggle-arrow-tool
+            aria-pressed="${state.editTool === "arrow"}">
+            ${state.editTool === "arrow" ? "● 正在绘制箭头（点击停止）" : "在球场上绘制箭头"}
+          </button>
           <div data-arrows-list>${renderArrowRows()}</div>
+        </div>
+        <div class="editor-arrows">
+          <h3>区域高亮</h3>
+          <p class="editor-hint">开启调整后，拖动区域上方圆点可旋转、中心方块可移动、右下角方块可缩放。</p>
+          <button type="button" class="icon-text-button editor-tool-toggle" data-toggle-zone-tool
+            aria-pressed="${state.editTool === "zone"}">
+            ${state.editTool === "zone" ? "● 正在调整区域（点击停止）" : "在球场上调整区域"}
+          </button>
+          <div data-zones-list>${renderZoneRows()}</div>
+          <button type="button" class="icon-text-button" data-add-zone>新增区域</button>
         </div>
         <label>教练备注
           <textarea data-edit-field="coachNotes" rows="2">${escapeHtml(scenario.coachNotes || "")}</textarea>
         </label>
         <p class="editor-hint">拖动球场上的球员/篮球可调整站位，保存修改会一并写入为新的初始站位。</p>
-        <div class="edit-actions">
-          <button type="submit" class="icon-text-button" data-edit-save>保存修改</button>
-          <button type="button" class="icon-text-button" data-edit-cancel>取消</button>
-        </div>
       </form>
     `;
   }
@@ -457,7 +614,9 @@
     state.ball = clone(scenario.ball || { x: 50, y: 20 });
     state.offensePositions = clonePositions(scenario.offense || []);
     state.arrows = clone(scenario.arrows || []);
+    state.zones = clone(scenario.zones || []);
     state.strokes = [];
+    state.editTool = "none";
     render();
   }
 
@@ -530,12 +689,16 @@
   resetBtn.addEventListener("click", () => loadScenario(state.scenarioId));
   editModeBtn.addEventListener("click", () => {
     state.editMode = !state.editMode;
+    state.editTool = "none";
     if (state.editMode) state.drawMode = false;
     render();
   });
   drawModeBtn.addEventListener("click", () => {
     state.drawMode = !state.drawMode;
-    if (state.drawMode) state.editMode = false;
+    if (state.drawMode) {
+      state.editMode = false;
+      state.editTool = "none";
+    }
     render();
   });
 
@@ -558,10 +721,39 @@
     }
   });
 
+  function setEditorToolButtonState(selector, isActive, activeLabel, inactiveLabel) {
+    const button = explanation.querySelector(selector);
+    if (!button) return;
+    button.setAttribute("aria-pressed", String(isActive));
+    button.textContent = isActive ? activeLabel : inactiveLabel;
+  }
+
+  function syncEditorToolButtons() {
+    setEditorToolButtonState("[data-toggle-arrow-tool]", state.editTool === "arrow",
+      "● 正在绘制箭头（点击停止）", "在球场上绘制箭头");
+    setEditorToolButtonState("[data-toggle-zone-tool]", state.editTool === "zone",
+      "● 正在调整区域（点击停止）", "在球场上调整区域");
+  }
+
   explanation.addEventListener("click", (event) => {
     if (event.target.closest("[data-edit-cancel]")) {
       state.editMode = false;
+      state.editTool = "none";
       render();
+      return;
+    }
+    const toggleArrowToolBtn = event.target.closest("[data-toggle-arrow-tool]");
+    if (toggleArrowToolBtn) {
+      state.editTool = state.editTool === "arrow" ? "none" : "arrow";
+      syncEditorToolButtons();
+      renderCourt();
+      return;
+    }
+    const toggleZoneToolBtn = event.target.closest("[data-toggle-zone-tool]");
+    if (toggleZoneToolBtn) {
+      state.editTool = state.editTool === "zone" ? "none" : "zone";
+      syncEditorToolButtons();
+      renderCourt();
       return;
     }
     const deleteArrowBtn = event.target.closest("[data-delete-arrow]");
@@ -569,6 +761,22 @@
       state.arrows.splice(Number(deleteArrowBtn.dataset.deleteArrow), 1);
       renderCourt();
       refreshArrowEditorList();
+      return;
+    }
+    const addZoneBtn = event.target.closest("[data-add-zone]");
+    if (addZoneBtn) {
+      state.zones.push({ label: "新区域", type: "middle", x: 40, y: 40, width: 20, height: 20 });
+      state.editTool = "zone";
+      syncEditorToolButtons();
+      renderCourt();
+      refreshZoneEditorList();
+      return;
+    }
+    const deleteZoneBtn = event.target.closest("[data-delete-zone]");
+    if (deleteZoneBtn) {
+      state.zones.splice(Number(deleteZoneBtn.dataset.deleteZone), 1);
+      renderCourt();
+      refreshZoneEditorList();
       return;
     }
     const roleChip = event.target.closest("[data-arrow-role]");
@@ -585,19 +793,40 @@
   });
 
   explanation.addEventListener("change", (event) => {
-    const typeSelect = event.target.closest('[data-arrow-field="type"]');
-    if (!typeSelect) return;
-    const arrow = state.arrows[Number(typeSelect.dataset.arrowIndex)];
-    if (!arrow) return;
-    arrow.type = typeSelect.value;
-    renderCourt();
+    const arrowFieldSelect = event.target.closest("[data-arrow-field]");
+    if (arrowFieldSelect && arrowFieldSelect.tagName === "SELECT") {
+      const arrow = state.arrows[Number(arrowFieldSelect.dataset.arrowIndex)];
+      if (arrow) {
+        arrow[arrowFieldSelect.dataset.arrowField] = arrowFieldSelect.value;
+        renderCourt();
+      }
+      return;
+    }
+    const zoneTypeSelect = event.target.closest('[data-zone-field="type"]');
+    if (zoneTypeSelect) {
+      const zone = state.zones[Number(zoneTypeSelect.dataset.zoneIndex)];
+      if (zone) {
+        zone.type = zoneTypeSelect.value;
+        renderCourt();
+      }
+    }
   });
 
   explanation.addEventListener("input", (event) => {
     const labelInput = event.target.closest('[data-arrow-field="label"]');
-    if (!labelInput) return;
-    const arrow = state.arrows[Number(labelInput.dataset.arrowIndex)];
-    if (arrow) arrow.label = labelInput.value;
+    if (labelInput) {
+      const arrow = state.arrows[Number(labelInput.dataset.arrowIndex)];
+      if (arrow) arrow.label = labelInput.value;
+      return;
+    }
+    const zoneLabelInput = event.target.closest('[data-zone-field="label"]');
+    if (zoneLabelInput) {
+      const zone = state.zones[Number(zoneLabelInput.dataset.zoneIndex)];
+      if (zone) {
+        zone.label = zoneLabelInput.value;
+        renderCourt();
+      }
+    }
   });
 
   explanation.addEventListener("submit", async (event) => {
@@ -619,11 +848,24 @@
       const clean = {
         from: { x: arrow.from.x, y: arrow.from.y },
         to: { x: arrow.to.x, y: arrow.to.y },
-        type: arrow.type || "rotation"
+        type: arrow.type || "rotation",
+        style: arrow.style || "solid"
       };
       if (arrow.roles && arrow.roles.length > 0) clean.roles = arrow.roles;
       const label = (arrow.label || "").trim();
       if (label) clean.label = label;
+      return clean;
+    });
+    const zones = state.zones.map((zone) => {
+      const clean = {
+        label: (zone.label || "").trim() || "区域",
+        type: zone.type || "middle",
+        x: Number(zone.x.toFixed(1)),
+        y: Number(zone.y.toFixed(1)),
+        width: Number(zone.width.toFixed(1)),
+        height: Number(zone.height.toFixed(1))
+      };
+      if (zone.rotation) clean.rotation = Number(zone.rotation.toFixed(1));
       return clean;
     });
     const patch = {
@@ -634,7 +876,8 @@
       defenders: clone(state.positions),
       offense: clonePositions(state.offensePositions),
       ball: clone(state.ball),
-      arrows
+      arrows,
+      zones
     };
 
     const saveButton = form.querySelector("[data-edit-save]");
@@ -642,6 +885,7 @@
     try {
       await window.TWBAContentService.updateScenario(state.playbookId, scenario.id, patch);
       state.editMode = false;
+      state.editTool = "none";
       await refreshLibrary(state.playbookId, scenario.id);
       setStatus("已保存修改。", "success");
     } catch (error) {
@@ -672,7 +916,9 @@
     state.ball = clone((scenario && scenario.ball) || { x: 50, y: 20 });
     state.offensePositions = clonePositions((scenario && scenario.offense) || []);
     state.arrows = clone((scenario && scenario.arrows) || []);
+    state.zones = clone((scenario && scenario.zones) || []);
     state.strokes = [];
+    state.editTool = "none";
     setStatus("");
     render();
   });
@@ -738,10 +984,14 @@
     const defender = event.target.closest("[data-marker='defender']");
     const offense = event.target.closest("[data-marker='offense']");
     const ball = event.target.closest("[data-marker='ball']");
-    if (!defender && !offense && !ball) {
-      if (state.editMode) {
+    const zoneToolActive = state.editMode && state.editTool === "zone";
+    const zoneMove = zoneToolActive ? event.target.closest("[data-marker='zone-move']") : null;
+    const zoneResize = zoneToolActive ? event.target.closest("[data-marker='zone-resize']") : null;
+    const zoneRotate = zoneToolActive ? event.target.closest("[data-marker='zone-rotate']") : null;
+    if (!defender && !offense && !ball && !zoneMove && !zoneResize && !zoneRotate) {
+      if (state.editMode && state.editTool === "arrow") {
         const point = pointFromEvent(event);
-        state.arrows.push({ from: point, to: point, type: "rotation", label: "" });
+        state.arrows.push({ from: point, to: point, type: "rotation", style: "solid", label: "" });
         state.dragTarget = { type: "arrow", index: state.arrows.length - 1 };
         court.setPointerCapture(event.pointerId);
       }
@@ -751,6 +1001,26 @@
       state.dragTarget = { type: "defender", role: defender.dataset.role };
     } else if (offense) {
       state.dragTarget = { type: "offense", index: Number(offense.dataset.index) };
+    } else if (zoneMove) {
+      const index = Number(zoneMove.dataset.index);
+      const zone = state.zones[index];
+      const point = pointFromEvent(event);
+      state.dragTarget = {
+        type: "zone-move",
+        index,
+        offsetX: point.x - zone.x,
+        offsetY: point.y - zone.y
+      };
+    } else if (zoneResize) {
+      const index = Number(zoneResize.dataset.index);
+      const zone = state.zones[index];
+      const { cx, cy } = zoneCenter(zone);
+      state.dragTarget = { type: "zone-resize", index, cx, cy, angle: zone.rotation || 0 };
+    } else if (zoneRotate) {
+      const index = Number(zoneRotate.dataset.index);
+      const zone = state.zones[index];
+      const { cx, cy } = zoneCenter(zone);
+      state.dragTarget = { type: "zone-rotate", index, cx, cy };
     } else {
       state.dragTarget = { type: "ball" };
     }
@@ -784,6 +1054,33 @@
       };
     } else if (state.dragTarget.type === "arrow") {
       state.arrows[state.dragTarget.index].to = point;
+    } else if (state.dragTarget.type === "zone-move") {
+      const zone = state.zones[state.dragTarget.index];
+      if (!zone) return;
+      const newX = point.x - state.dragTarget.offsetX;
+      const newY = point.y - state.dragTarget.offsetY;
+      zone.x = Math.max(0, Math.min(100 - zone.width, Number(newX.toFixed(1))));
+      zone.y = Math.max(0, Math.min(100 - zone.height, Number(newY.toFixed(1))));
+    } else if (state.dragTarget.type === "zone-resize") {
+      const zone = state.zones[state.dragTarget.index];
+      if (!zone) return;
+      const { cx, cy, angle } = state.dragTarget;
+      const rad = (-angle * Math.PI) / 180;
+      const dx = point.x - cx;
+      const dy = point.y - cy;
+      const localX = dx * Math.cos(rad) - dy * Math.sin(rad);
+      const localY = dx * Math.sin(rad) + dy * Math.cos(rad);
+      const minSize = 6;
+      zone.width = Math.min(100, Number(Math.max(minSize, Math.abs(localX) * 2).toFixed(1)));
+      zone.height = Math.min(100, Number(Math.max(minSize, Math.abs(localY) * 2).toFixed(1)));
+      zone.x = Math.max(0, Math.min(100 - zone.width, Number((cx - zone.width / 2).toFixed(1))));
+      zone.y = Math.max(0, Math.min(100 - zone.height, Number((cy - zone.height / 2).toFixed(1))));
+    } else if (state.dragTarget.type === "zone-rotate") {
+      const zone = state.zones[state.dragTarget.index];
+      if (!zone) return;
+      const { cx, cy } = state.dragTarget;
+      const angleDeg = (Math.atan2(point.y - cy, point.x - cx) * 180) / Math.PI + 90;
+      zone.rotation = Number((((angleDeg % 360) + 360) % 360).toFixed(1));
     } else {
       state.ball = pointWithoutVisualOffset(point, ballVisualOffset);
     }

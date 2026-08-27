@@ -170,6 +170,14 @@ h2 {
   box-shadow: 0 0 0 1px var(--ball), var(--shadow);
 }
 
+.court-wrap.is-tool-arrow {
+  cursor: crosshair;
+}
+
+.court-wrap.is-tool-zone {
+  cursor: default;
+}
+
 .side-panel {
   display: flex;
   flex-direction: column;
@@ -371,6 +379,32 @@ h2 {
   pointer-events: none;
 }
 
+.zone-handle {
+  stroke: rgba(11, 14, 19, 0.6);
+  stroke-width: 0.4;
+}
+
+.zone-handle-move {
+  fill: rgba(238, 244, 242, 0.85);
+  cursor: grab;
+}
+
+.zone-handle-resize {
+  fill: var(--defense);
+  cursor: nwse-resize;
+}
+
+.zone-handle-rotate {
+  fill: var(--offense);
+  cursor: grab;
+}
+
+.zone-handle-rotate-stem {
+  stroke: rgba(238, 244, 242, 0.6);
+  stroke-width: 0.4;
+  vector-effect: non-scaling-stroke;
+}
+
 .offense-marker,
 .defender-marker {
   cursor: grab;
@@ -459,6 +493,20 @@ h2 {
 #arrow-pass path {
   stroke: var(--pass);
   fill: var(--pass);
+}
+
+.arrow-dashed {
+  stroke-dasharray: 3 2.2;
+}
+
+.arrow-wavy {
+  fill: none;
+}
+
+.arrow-screen-bar {
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
 }
 
 .principle {
@@ -565,6 +613,17 @@ h2 {
   background: var(--surface);
 }
 
+.editor-tool-toggle {
+  width: 100%;
+}
+
+.editor-tool-toggle[aria-pressed="true"] {
+  border-color: var(--ball);
+  background: rgba(255, 212, 71, 0.16);
+  color: var(--ball);
+  font-weight: 700;
+}
+
 .editor-arrow-roles {
   display: flex;
   flex-wrap: wrap;
@@ -594,6 +653,17 @@ h2 {
 .edit-actions {
   display: flex;
   gap: 8px;
+}
+
+.edit-actions--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  margin: 0 0 4px;
+  padding: 6px 0 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 6px 10px -6px rgba(0, 0, 0, 0.45);
 }
 
 .edit-actions .icon-text-button {
