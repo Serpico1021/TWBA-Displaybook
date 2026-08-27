@@ -606,6 +606,8 @@
   function refreshArrowEditorList() {
     const container = explanation.querySelector("[data-arrows-list]");
     if (container) container.innerHTML = renderArrowRows();
+    const summary = container && container.closest("details")?.querySelector("summary");
+    if (summary) summary.textContent = `轮转箭头${state.arrows.length ? `（${state.arrows.length}）` : ""}`;
   }
 
   function renderZoneRows() {
@@ -632,24 +634,28 @@
   function refreshZoneEditorList() {
     const container = explanation.querySelector("[data-zones-list]");
     if (container) container.innerHTML = renderZoneRows();
+    const summary = container && container.closest("details")?.querySelector("summary");
+    if (summary) summary.textContent = `区域高亮${state.zones.length ? `（${state.zones.length}）` : ""}`;
   }
 
   function renderExplanationEditor(scenario) {
     const cards = roles.map((role) => {
       const item = getResponsibility(scenario, role);
       return `
-        <fieldset class="editor-role">
-          <legend>${role}号</legend>
-          <label>站哪里
-            <textarea data-edit-field="where" data-role="${role}" rows="2">${escapeHtml(item.where)}</textarea>
-          </label>
-          <label>看什么
-            <textarea data-edit-field="watch" data-role="${role}" rows="2">${escapeHtml(item.watch)}</textarea>
-          </label>
-          <label>为什么
-            <textarea data-edit-field="why" data-role="${role}" rows="2">${escapeHtml(item.why)}</textarea>
-          </label>
-        </fieldset>
+        <details class="editor-section editor-role">
+          <summary>${role}号职责</summary>
+          <div class="editor-section-body">
+            <label>站哪里
+              <textarea data-edit-field="where" data-role="${role}" rows="2">${escapeHtml(item.where)}</textarea>
+            </label>
+            <label>看什么
+              <textarea data-edit-field="watch" data-role="${role}" rows="2">${escapeHtml(item.watch)}</textarea>
+            </label>
+            <label>为什么
+              <textarea data-edit-field="why" data-role="${role}" rows="2">${escapeHtml(item.why)}</textarea>
+            </label>
+          </div>
+        </details>
       `;
     }).join("");
 
@@ -665,26 +671,33 @@
         <label>讲解要点
           <textarea data-edit-field="principle" rows="2">${escapeHtml(scenario.principle || "")}</textarea>
         </label>
-        ${cards}
-        <div class="editor-arrows">
-          <h3>轮转箭头</h3>
-          <p class="editor-hint">开启绘制后，从球员或篮球图标按住拖拽，可绑定其为播放起点（支持下方"轮转播放"动态演示）；在空白处拖拽则只作为示意箭头。保存后成为该情景的默认标注，非临时讲解。</p>
-          <button type="button" class="icon-text-button editor-tool-toggle" data-toggle-arrow-tool
-            aria-pressed="${state.editTool === "arrow"}">
-            ${state.editTool === "arrow" ? "● 正在绘制箭头（点击停止）" : "在球场上绘制箭头"}
-          </button>
-          <div data-arrows-list>${renderArrowRows()}</div>
-        </div>
-        <div class="editor-arrows">
-          <h3>区域高亮</h3>
-          <p class="editor-hint">开启调整后，拖动区域上方圆点可旋转、中心方块可移动、右下角方块可缩放。</p>
-          <button type="button" class="icon-text-button editor-tool-toggle" data-toggle-zone-tool
-            aria-pressed="${state.editTool === "zone"}">
-            ${state.editTool === "zone" ? "● 正在调整区域（点击停止）" : "在球场上调整区域"}
-          </button>
-          <div data-zones-list>${renderZoneRows()}</div>
-          <button type="button" class="icon-text-button" data-add-zone>新增区域</button>
-        </div>
+        <details class="editor-section editor-role-group" open>
+          <summary>号位职责（${roles.length}）</summary>
+          <div class="editor-section-body editor-role-group-body">${cards}</div>
+        </details>
+        <details class="editor-section editor-arrows">
+          <summary>轮转箭头${state.arrows.length ? `（${state.arrows.length}）` : ""}</summary>
+          <div class="editor-section-body">
+            <p class="editor-hint">开启绘制后，从球员或篮球图标按住拖拽，可绑定其为播放起点（支持下方"轮转播放"动态演示）；在空白处拖拽则只作为示意箭头。保存后成为该情景的默认标注，非临时讲解。</p>
+            <button type="button" class="icon-text-button editor-tool-toggle" data-toggle-arrow-tool
+              aria-pressed="${state.editTool === "arrow"}">
+              ${state.editTool === "arrow" ? "● 正在绘制箭头（点击停止）" : "在球场上绘制箭头"}
+            </button>
+            <div data-arrows-list>${renderArrowRows()}</div>
+          </div>
+        </details>
+        <details class="editor-section editor-arrows">
+          <summary>区域高亮${state.zones.length ? `（${state.zones.length}）` : ""}</summary>
+          <div class="editor-section-body">
+            <p class="editor-hint">开启调整后，拖动区域上方圆点可旋转、中心方块可移动、右下角方块可缩放。</p>
+            <button type="button" class="icon-text-button editor-tool-toggle" data-toggle-zone-tool
+              aria-pressed="${state.editTool === "zone"}">
+              ${state.editTool === "zone" ? "● 正在调整区域（点击停止）" : "在球场上调整区域"}
+            </button>
+            <div data-zones-list>${renderZoneRows()}</div>
+            <button type="button" class="icon-text-button" data-add-zone>新增区域</button>
+          </div>
+        </details>
         <label>教练备注
           <textarea data-edit-field="coachNotes" rows="2">${escapeHtml(scenario.coachNotes || "")}</textarea>
         </label>
