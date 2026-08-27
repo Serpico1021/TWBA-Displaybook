@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>2-3联防轮转演示</title>
+    <link rel="stylesheet" href="./src/styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="court-panel" aria-label="FIBA半场战术板">
+        <div class="top-bar">
+          <div>
+            <p class="kicker">TWBA Displaybook</p>
+            <h1>2-3联防轮转演示</h1>
+          </div>
+          <div class="top-bar-actions">
+            <button id="drawModeBtn" class="icon-text-button" type="button" aria-pressed="false">画图</button>
+            <button id="editModeBtn" class="icon-text-button" type="button" aria-pressed="false">编辑模式</button>
+            <button id="resetBtn" class="icon-text-button" type="button">重置站位</button>
+          </div>
+        </div>
+        <div class="team-bar" aria-hidden="true"></div>
+        <div id="court" class="court-wrap" aria-label="FIBA半场"></div>
+        <div id="transport" class="transport-bar" aria-label="轮转播放控制">
+          <button id="transportPlayBtn" class="transport-play" type="button" aria-pressed="false" aria-label="播放轮转演示">▶</button>
+          <div id="transportTrack" class="transport-track" role="slider" aria-label="播放进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div id="transportFill" class="transport-fill" style="width:0%"></div>
+            <div id="transportThumb" class="transport-thumb" style="left:0%"></div>
+          </div>
+          <span id="transportTime" class="transport-time">暂无可播放轮转</span>
+          <div class="transport-speed" role="group" aria-label="播放速度">
+            <button type="button" data-speed="0.5" aria-pressed="false">0.5x</button>
+            <button type="button" data-speed="1" aria-pressed="true">1x</button>
+            <button type="button" data-speed="2" aria-pressed="false">2x</button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-panel" aria-label="情景与职责说明">
+        <section class="library-panel" aria-label="内容库">
+          <div class="section-title-row">
+            <h2>战术包</h2>
+            <span id="playbookType" class="type-pill">防守</span>
+          </div>
+          <select id="playbookSelect" class="playbook-select" aria-label="选择战术包"></select>
+          <div class="library-actions">
+            <button id="importBtn" class="icon-text-button" type="button">导入 JSON</button>
+            <button id="deletePlaybookBtn" class="icon-text-button" type="button">删除导入</button>
+          </div>
+          <div class="library-actions library-actions--single">
+            <button id="exportPlaybookBtn" class="icon-text-button" type="button">导出当前战术包为 JSON</button>
+          </div>
+          <div class="library-actions library-actions--single">
+            <button id="exportCustomContentBtn" class="icon-text-button" type="button">导出为项目数据文件（custom-content.js）</button>
+          </div>
+          <p class="editor-hint">导出后覆盖 src/custom-content.js，再照常 git add+commit+push，自定义/导入内容即可随项目一起打包、上传 GitHub。</p>
+          <div class="library-actions library-actions--pair">
+            <button id="newDefensePlaybookBtn" class="icon-text-button" type="button">新建防守包</button>
+            <button id="newOffensePlaybookBtn" class="icon-text-button" type="button">新建进攻包</button>
+          </div>
+          <input id="importFile" type="file" accept="application/json,.json" hidden>
+          <p id="libraryStatus" class="library-status" aria-live="polite"></p>
+        </section>
+
+        <section>
+          <h2>情景</h2>
+          <select id="scenarioSelect" class="playbook-select" aria-label="选择情景"></select>
+          <div class="library-actions library-actions--pair">
+            <button id="addScenarioBtn" class="icon-text-button" type="button">新增情景</button>
+            <button id="deleteScenarioBtn" class="icon-text-button" type="button">删除情景</button>
+          </div>
+        </section>
+
+        <section>
+          <h2>视角</h2>
+          <div id="roleFilter" class="role-filter" aria-label="号码筛选"></div>
+        </section>
+
+        <section class="display-controls" aria-label="显示控制">
+          <label><input id="toggleArrows" type="checkbox" checked> 轮转箭头</label>
+          <label><input id="toggleOffense" type="checkbox" checked> 进攻参照</label>
+          <label><input id="toggleZones" type="checkbox" checked> 区域高亮</label>
+        </section>
+
+        <section id="explanation" class="explanation" aria-live="polite"></section>
+      </aside>
+    </main>
+    <noscript>此页面需要启用 JavaScript 才能显示战术情景。</noscript>
+    <script src="./src/builtin-content.js"></script>
+    <script src="./src/custom-content.js"></script>
+    <script src="./src/content-validation.js"></script>
+    <script src="./src/content-db.js"></script>
+    <script src="./src/content-service.js"></script>
+    <script src="./src/app.js"></script>
+  </body>
+</html>

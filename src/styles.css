@@ -1,0 +1,1000 @@
+:root {
+  color-scheme: dark;
+
+  --bg: #0b0e13;
+  --surface: #151a21;
+  --surface-raised: #1c222b;
+  --line: #2a323d;
+  --ink: #eef1f5;
+  --muted: #93a1b0;
+  --danger: #ff5c5c;
+
+  --court: #10202a;
+  --court-line: #eef4f2;
+
+  --defense: #33b1ff;
+  --rotation: #22d3b8;
+  --help: #8c6bff;
+
+  --offense: #ff7a45;
+  --ball: #ffd447;
+  --pass: #ff5c93;
+
+  --zone-red: #ff4d4d;
+  --zone-blue: #4d7cff;
+  --zone-green: #33d17a;
+  --zone-amber: #ffa53d;
+  --zone-violet: #a855f7;
+  --zone-cyan: #22d3ee;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --radius: 6px;
+  --font-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--defense);
+}
+
+:focus-visible {
+  outline: 2px solid var(--defense);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.9fr) minmax(320px, 0.9fr);
+  gap: 14px;
+  padding: 14px;
+  height: 100vh;
+}
+
+.court-panel,
+.side-panel {
+  min-width: 0;
+  min-height: 0;
+}
+
+.court-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.top-bar {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.top-bar-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+#editModeBtn[aria-pressed="true"] {
+  border-color: var(--defense);
+  background: rgba(51, 177, 255, 0.14);
+  color: var(--defense);
+  font-weight: 700;
+}
+
+.team-bar {
+  height: 3px;
+  margin: 10px 0 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--defense), var(--ball), var(--offense));
+}
+
+.kicker {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+h2 {
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.court-wrap {
+  position: relative;
+  width: min(100%, calc((100vh - 190px) * 15 / 14));
+  aspect-ratio: 15 / 14;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--court);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  touch-action: none;
+}
+
+.court-wrap.is-editing {
+  border-color: var(--defense);
+  box-shadow: 0 0 0 1px var(--defense), var(--shadow);
+}
+
+.court-wrap.is-drawing {
+  cursor: crosshair;
+  border-color: var(--ball);
+  box-shadow: 0 0 0 1px var(--ball), var(--shadow);
+}
+
+.court-wrap.is-tool-arrow {
+  cursor: crosshair;
+}
+
+.court-wrap.is-tool-zone {
+  cursor: default;
+}
+
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+}
+
+.role-filter {
+  display: grid;
+  gap: 8px;
+}
+
+.library-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.type-pill {
+  min-width: 44px;
+  border: 1px solid rgba(51, 177, 255, 0.35);
+  border-radius: var(--radius);
+  padding: 4px 8px;
+  background: rgba(51, 177, 255, 0.12);
+  color: var(--defense);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.type-pill[data-type="offense"] {
+  border-color: rgba(255, 122, 69, 0.4);
+  background: rgba(255, 122, 69, 0.12);
+  color: var(--offense);
+}
+
+.playbook-select {
+  min-height: 40px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 10px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+}
+
+.library-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.library-actions--pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.library-actions--single {
+  grid-template-columns: 1fr;
+}
+
+.library-actions .icon-text-button {
+  width: 100%;
+  padding: 0 8px;
+}
+
+.library-status {
+  min-height: 18px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.library-status[data-tone="success"] {
+  color: var(--rotation);
+}
+
+.library-status[data-tone="error"] {
+  color: var(--danger);
+}
+
+.role-filter button,
+.icon-text-button {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.role-filter button:hover:not([aria-pressed="true"]),
+.icon-text-button:hover:not(:disabled) {
+  border-color: var(--defense);
+}
+
+.role-filter button[aria-pressed="true"] {
+  border-color: var(--defense);
+  background: rgba(51, 177, 255, 0.14);
+  color: var(--defense);
+  font-weight: 700;
+}
+
+.role-filter {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.role-filter button {
+  padding: 0 8px;
+  font-family: var(--font-mono);
+}
+
+.display-controls {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.display-controls label {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-text-button {
+  flex: 0 0 auto;
+  padding: 0 14px;
+  font-weight: 700;
+}
+
+.icon-text-button:disabled,
+.playbook-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.court-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+
+.court-bg {
+  fill: var(--court);
+}
+
+.court-boundary,
+.court-line,
+.rim-board {
+  fill: none;
+  stroke: var(--court-line);
+  stroke-width: 0.85;
+  vector-effect: non-scaling-stroke;
+}
+
+.court-boundary {
+  stroke-width: 1.1;
+}
+
+.no-fill {
+  fill: none;
+}
+
+.court-dash {
+  stroke-dasharray: 2 1.4;
+}
+
+.zone {
+  opacity: 0.22;
+}
+
+.zone-red {
+  fill: var(--zone-red);
+}
+
+.zone-blue {
+  fill: var(--zone-blue);
+}
+
+.zone-green {
+  fill: var(--zone-green);
+}
+
+.zone-amber {
+  fill: var(--zone-amber);
+}
+
+.zone-violet {
+  fill: var(--zone-violet);
+}
+
+.zone-cyan {
+  fill: var(--zone-cyan);
+}
+
+.zone-label {
+  fill: rgba(238, 244, 242, 0.85);
+  font-size: 3.1px;
+  font-weight: 700;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.zone-handle {
+  stroke: rgba(11, 14, 19, 0.6);
+  stroke-width: 0.4;
+}
+
+.zone-handle-move {
+  fill: rgba(238, 244, 242, 0.85);
+  cursor: grab;
+}
+
+.zone-handle-resize {
+  fill: var(--defense);
+  cursor: nwse-resize;
+}
+
+.zone-handle-rotate {
+  fill: var(--offense);
+  cursor: grab;
+}
+
+.zone-handle-rotate-stem {
+  stroke: rgba(238, 244, 242, 0.6);
+  stroke-width: 0.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.offense-marker,
+.defender-marker {
+  cursor: grab;
+  transition: opacity 120ms ease;
+}
+
+.offense-marker circle,
+.defender-marker circle {
+  stroke: rgba(11, 14, 19, 0.55);
+  stroke-width: 0.9;
+}
+
+.offense-marker circle {
+  fill: var(--offense);
+}
+
+.defender-marker circle {
+  fill: var(--defense);
+}
+
+.offense-marker text,
+.defender-marker text {
+  fill: #0b0e13;
+  font-family: var(--font-mono);
+  font-size: 3.6px;
+  font-weight: 700;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.offense-marker .hit-target,
+.ball-marker .hit-target,
+.defender-marker .hit-target {
+  fill: transparent;
+  stroke: none;
+  filter: none;
+}
+
+.ball-marker {
+  cursor: grab;
+}
+
+.ball-marker circle {
+  fill: var(--ball);
+  stroke: rgba(11, 14, 19, 0.55);
+  stroke-width: 0.65;
+}
+
+.ball-marker path {
+  fill: none;
+  stroke: rgba(11, 14, 19, 0.7);
+  stroke-width: 0.35;
+  pointer-events: none;
+}
+
+.defender-marker.is-muted {
+  opacity: 0.32;
+}
+
+.defender-marker:active,
+.offense-marker:active,
+.ball-marker:active {
+  cursor: grabbing;
+}
+
+.arrow {
+  fill: none;
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.arrow-rotation,
+#arrow-rotation path {
+  stroke: var(--rotation);
+  fill: var(--rotation);
+}
+
+.arrow-help,
+#arrow-help path {
+  stroke: var(--help);
+  fill: var(--help);
+}
+
+.arrow-pass,
+#arrow-pass path {
+  stroke: var(--pass);
+  fill: var(--pass);
+}
+
+.arrow-dashed {
+  stroke-dasharray: 3 2.2;
+}
+
+.arrow-wavy {
+  fill: none;
+}
+
+.arrow-screen-bar {
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.principle {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.responsibility-card {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+}
+
+.responsibility-card h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+}
+
+.responsibility-card p,
+.coach-note {
+  margin: 6px 0;
+  line-height: 1.55;
+}
+
+.coach-note {
+  color: var(--muted);
+}
+
+.scenario-editor {
+  display: grid;
+  gap: 10px;
+}
+
+.scenario-editor label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.scenario-editor input,
+.scenario-editor select,
+.scenario-editor textarea {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.editor-section {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+
+.editor-section + .editor-section {
+  margin-top: 0;
+}
+
+.editor-section summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px;
+  color: var(--defense);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.editor-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.editor-section summary::before {
+  content: "▸";
+  display: inline-block;
+  font-size: 11px;
+  transition: transform 0.15s ease;
+}
+
+.editor-section[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.editor-section[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.editor-section-body {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.editor-role-group-body {
+  gap: 8px;
+}
+
+.editor-arrows summary {
+  color: var(--rotation);
+}
+
+.editor-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.editor-arrow {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.editor-tool-toggle {
+  width: 100%;
+}
+
+.editor-tool-toggle[aria-pressed="true"] {
+  border-color: var(--ball);
+  background: rgba(255, 212, 71, 0.16);
+  color: var(--ball);
+  font-weight: 700;
+}
+
+.editor-arrow-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.editor-arrow-roles .chip {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.editor-arrow-roles .chip[aria-pressed="true"] {
+  border-color: var(--rotation);
+  background: rgba(34, 211, 184, 0.16);
+  color: var(--rotation);
+  font-weight: 700;
+}
+
+.zone-color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.zone-color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.zone-color-swatch[aria-pressed="true"] {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--ink);
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-actions--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  margin: 0 0 4px;
+  padding: 6px 0 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 6px 10px -6px rgba(0, 0, 0, 0.45);
+}
+
+.edit-actions .icon-text-button {
+  flex: 1;
+}
+
+.edit-actions [data-edit-save] {
+  border-color: var(--defense);
+  background: rgba(51, 177, 255, 0.16);
+  color: var(--defense);
+  font-weight: 700;
+}
+
+.empty-state {
+  display: grid;
+  min-height: 80px;
+  place-items: center;
+  padding: 16px;
+  color: var(--muted);
+  text-align: center;
+}
+
+noscript {
+  display: block;
+  padding: 16px;
+  color: var(--danger);
+}
+
+/* Rotation playback transport: animates markers along bound arrows.
+   Wired up in app.js (#transport). The tactical annotation glyphs below
+   (.annotation-run / .annotation-dribble / .annotation-screen) remain a
+   forward design spec for a future freehand marker tool and are not
+   wired to JS yet. The freehand draw toolbar
+   (.draw-toolbar / .draw-swatch / .draw-clear / .draw-stroke) is wired
+   up in app.js. */
+
+.transport-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.transport-bar.is-disabled {
+  opacity: 0.55;
+}
+
+.transport-bar.is-disabled .transport-track {
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.transport-play {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: none;
+  background: var(--ball);
+  color: #0b0e13;
+  cursor: pointer;
+}
+
+.transport-play:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.transport-track {
+  position: relative;
+  flex: 1 1 auto;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+  cursor: pointer;
+}
+
+.transport-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: var(--ball);
+}
+
+.transport-thumb {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ball);
+  border: 2px solid var(--surface-raised);
+  transform: translate(-50%, -50%);
+}
+
+.transport-time {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.transport-speed {
+  display: flex;
+  gap: 4px;
+}
+
+.transport-speed button {
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.transport-speed button[aria-pressed="true"] {
+  border-color: var(--ball);
+  color: var(--ball);
+}
+
+.annotation-run {
+  fill: none;
+  stroke: var(--rotation);
+  stroke-width: 1.25;
+  stroke-linecap: round;
+}
+
+.annotation-dribble {
+  fill: none;
+  stroke: var(--offense);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-dasharray: 0.2 2.4;
+}
+
+.annotation-screen {
+  stroke: var(--pass);
+  stroke-width: 1.6;
+  stroke-linecap: square;
+}
+
+.draw-toolbar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  background: rgba(21, 26, 33, 0.88);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.draw-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.draw-swatch[aria-pressed="true"] {
+  border-color: var(--ink);
+}
+
+.draw-toolbar button.icon-only {
+  min-height: 26px;
+  width: 26px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.draw-toolbar button.icon-only[aria-pressed="true"] {
+  border-color: var(--ball);
+  color: var(--ball);
+}
+
+.draw-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--line);
+}
+
+.draw-clear {
+  min-height: 26px;
+  padding: 0 8px;
+  white-space: nowrap;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.draw-stroke {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+@media (min-width: 1200px) {
+  .responsibility-card p,
+  .principle,
+  .coach-note {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+    height: auto;
+    padding: 10px;
+  }
+
+  .side-panel {
+    overflow-y: visible;
+  }
+
+  h1 {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 520px) {
+  .top-bar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .icon-text-button {
+    width: 100%;
+  }
+
+  .library-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .court-wrap {
+    width: 100%;
+    max-height: none;
+  }
+
+  .role-filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
