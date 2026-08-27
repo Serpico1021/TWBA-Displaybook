@@ -30,8 +30,8 @@ window.TWBA_BUILTIN_PLAYBOOKS = [
       "5": { x: 50, y: 61, status: "middle" }
     },
     zones: [
-      { id: "middle", label: "中路", x: 37, y: 34, width: 26, height: 40, type: "middle" },
-      { id: "baseline", label: "底线保护", x: 18, y: 66, width: 64, height: 24, type: "last" }
+      { id: "middle", label: "中路", x: 37, y: 34, width: 26, height: 40, color: "blue" },
+      { id: "baseline", label: "底线保护", x: 18, y: 66, width: 64, height: 24, color: "green" }
     ],
     responsibilities: {
       "1": {
@@ -82,9 +82,9 @@ window.TWBA_BUILTIN_PLAYBOOKS = [
       "5": { x: 48, y: 61, status: "middle-line" }
     },
     zones: [
-      { id: "strong-side", label: "强侧压迫", x: 0, y: 30, width: 42, height: 70, type: "strong" },
-      { id: "middle-line", label: "中间三人", x: 22, y: 40, width: 34, height: 30, type: "middle" },
-      { id: "last-line", label: "最后保护", x: 52, y: 66, width: 28, height: 24, type: "last" }
+      { id: "strong-side", label: "强侧压迫", x: 0, y: 30, width: 42, height: 70, color: "red" },
+      { id: "middle-line", label: "中间三人", x: 22, y: 40, width: 34, height: 30, color: "blue" },
+      { id: "last-line", label: "最后保护", x: 52, y: 66, width: 28, height: 24, color: "green" }
     ],
     responsibilities: {
       "1": {
@@ -135,8 +135,8 @@ window.TWBA_BUILTIN_PLAYBOOKS = [
       "5": { x: 42, y: 73, status: "rim" }
     },
     zones: [
-      { id: "corner-trap", label: "底角压迫", x: 0, y: 67, width: 28, height: 31, type: "strong" },
-      { id: "rim-cover", label: "篮下补位", x: 35, y: 69, width: 37, height: 24, type: "middle" }
+      { id: "corner-trap", label: "底角压迫", x: 0, y: 67, width: 28, height: 31, color: "red" },
+      { id: "rim-cover", label: "篮下补位", x: 35, y: 69, width: 37, height: 24, color: "blue" }
     ],
     responsibilities: {
       "1": {
@@ -187,8 +187,8 @@ window.TWBA_BUILTIN_PLAYBOOKS = [
       "5": { x: 53, y: 62, status: "middle" }
     },
     zones: [
-      { id: "middle-first", label: "先保中路", x: 35, y: 40, width: 30, height: 36, type: "middle" },
-      { id: "new-strong", label: "新强侧", x: 62, y: 32, width: 38, height: 66, type: "strong" }
+      { id: "middle-first", label: "先保中路", x: 35, y: 40, width: 30, height: 36, color: "blue" },
+      { id: "new-strong", label: "新强侧", x: 62, y: 32, width: 38, height: 66, color: "red" }
     ],
     responsibilities: {
       "1": {
@@ -239,8 +239,8 @@ window.TWBA_BUILTIN_PLAYBOOKS = [
       "5": { x: 50, y: 58, status: "high-post" }
     },
     zones: [
-      { id: "high-post-danger", label: "高位危险区", x: 39, y: 43, width: 22, height: 20, type: "strong" },
-      { id: "rim-line", label: "篮下保护", x: 28, y: 70, width: 44, height: 22, type: "middle" }
+      { id: "high-post-danger", label: "高位危险区", x: 39, y: 43, width: 22, height: 20, color: "red" },
+      { id: "rim-line", label: "篮下保护", x: 28, y: 70, width: 44, height: 22, color: "blue" }
     ],
     responsibilities: {
       "1": {
@@ -291,8 +291,8 @@ window.TWBA_BUILTIN_PLAYBOOKS = [
       "5": { x: 50, y: 78, status: "rim-box" }
     },
     zones: [
-      { id: "rebound", label: "篮板区", x: 27, y: 68, width: 46, height: 25, type: "middle" },
-      { id: "long-board", label: "长篮板", x: 42, y: 30, width: 34, height: 20, type: "last" }
+      { id: "rebound", label: "篮板区", x: 27, y: 68, width: 46, height: 25, color: "blue" },
+      { id: "long-board", label: "长篮板", x: 42, y: 30, width: 34, height: 20, color: "green" }
     ],
     responsibilities: {
       "1": {

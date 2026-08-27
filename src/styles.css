@@ -20,9 +20,12 @@
   --ball: #ffd447;
   --pass: #ff5c93;
 
-  --zone-strong: #ff4d4d;
-  --zone-middle: #4d7cff;
-  --zone-last: #33d17a;
+  --zone-red: #ff4d4d;
+  --zone-blue: #4d7cff;
+  --zone-green: #33d17a;
+  --zone-amber: #ffa53d;
+  --zone-violet: #a855f7;
+  --zone-cyan: #22d3ee;
 
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   --radius: 6px;
@@ -363,16 +366,28 @@ h2 {
   opacity: 0.22;
 }
 
-.zone-strong {
-  fill: var(--zone-strong);
+.zone-red {
+  fill: var(--zone-red);
 }
 
-.zone-middle {
-  fill: var(--zone-middle);
+.zone-blue {
+  fill: var(--zone-blue);
 }
 
-.zone-last {
-  fill: var(--zone-last);
+.zone-green {
+  fill: var(--zone-green);
+}
+
+.zone-amber {
+  fill: var(--zone-amber);
+}
+
+.zone-violet {
+  fill: var(--zone-violet);
+}
+
+.zone-cyan {
+  fill: var(--zone-cyan);
 }
 
 .zone-label {
@@ -652,6 +667,25 @@ h2 {
   background: rgba(34, 211, 184, 0.16);
   color: var(--rotation);
   font-weight: 700;
+}
+
+.zone-color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.zone-color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.zone-color-swatch[aria-pressed="true"] {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--ink);
 }
 
 .edit-actions {

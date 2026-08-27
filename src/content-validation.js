@@ -4,7 +4,8 @@
   const arrowTypes = ["rotation", "help", "pass"];
   const arrowStyles = ["solid", "dashed", "wavy", "screen"];
   const moverTypes = ["defender", "offense", "ball"];
-  const zoneTypes = ["strong", "middle", "last"];
+  const zoneColors = ["red", "blue", "green", "amber", "violet", "cyan"];
+  const legacyZoneTypeToColor = { strong: "red", middle: "blue", last: "green" };
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -107,8 +108,8 @@
       const label = `情景 ${scenarioId} zones[${index}]`;
       if (!isObject(zone)) fail(`${label} 必须是对象。`);
       requireText(zone.label, `${label}.label`);
-      if (!zoneTypes.includes(zone.type)) {
-        fail(`${label}.type 必须是 ${zoneTypes.join("/")} 之一。`);
+      if (!zoneColors.includes(zone.color)) {
+        fail(`${label}.color 必须是 ${zoneColors.join("/")} 之一。`);
       }
       ["x", "y"].forEach((axis) => {
         const value = zone[axis];
@@ -130,10 +131,23 @@
     });
   }
 
+  function migrateLegacyZoneColors(scenarios) {
+    if (!Array.isArray(scenarios)) return;
+    scenarios.forEach((scenario) => {
+      if (!isObject(scenario) || !Array.isArray(scenario.zones)) return;
+      scenario.zones.forEach((zone) => {
+        if (!isObject(zone) || zone.color !== undefined || zone.type === undefined) return;
+        zone.color = legacyZoneTypeToColor[zone.type] || "red";
+        delete zone.type;
+      });
+    });
+  }
+
   function normalizePackageSource(packageData, source) {
     const normalized = clone(packageData);
     normalized.playbook = normalized.playbook || {};
     normalized.playbook.source = source;
+    migrateLegacyZoneColors(normalized.scenarios);
     return normalized;
   }
 

@@ -12,6 +12,16 @@
   const offenseVisualOffset = { x: -2.1, y: -1.6 };
   const ballVisualOffset = { x: 2, y: 1.6 };
   const DRAW_COLORS = ["#eef1f5", "#ffd447", "#ff5c5c", "#33b1ff"];
+  const ZONE_COLORS = [
+    { key: "red", hex: "#ff4d4d" },
+    { key: "blue", hex: "#4d7cff" },
+    { key: "green", hex: "#33d17a" },
+    { key: "amber", hex: "#ffa53d" },
+    { key: "violet", hex: "#a855f7" },
+    { key: "cyan", hex: "#22d3ee" }
+  ];
+  const LEGACY_ZONE_TYPE_TO_COLOR = { strong: "red", middle: "blue", last: "green" };
+  const ZONE_COLOR_KEYS = ZONE_COLORS.map((color) => color.key);
   const DRAW_WIDTHS = [
     { value: 0.5, label: "细" },
     { value: 1, label: "中" },
@@ -172,6 +182,11 @@
     return { cx: zone.x + zone.width / 2, cy: zone.y + zone.height / 2 };
   }
 
+  function zoneColorKey(zone) {
+    if (ZONE_COLOR_KEYS.includes(zone.color)) return zone.color;
+    return LEGACY_ZONE_TYPE_TO_COLOR[zone.type] || "red";
+  }
+
   function zoneRotateAttr(zone) {
     if (!zone.rotation) return "";
     const { cx, cy } = zoneCenter(zone);
@@ -182,7 +197,7 @@
     if (!state.showZones) return "";
     const bodies = state.zones.map((zone) => `
       <g class="zone-group"${zoneRotateAttr(zone)}>
-        <rect class="zone zone-${escapeHtml(zone.type)}" x="${number(zone.x)}" y="${number(zone.y)}" width="${number(zone.width)}" height="${number(zone.height)}"></rect>
+        <rect class="zone zone-${escapeHtml(zoneColorKey(zone))}" x="${number(zone.x)}" y="${number(zone.y)}" width="${number(zone.width)}" height="${number(zone.height)}"></rect>
         <text class="zone-label" x="${number(zoneCenter(zone).cx)}" y="${number(zone.y + 5)}">${escapeHtml(zone.label)}</text>
       </g>
     `).join("");
@@ -593,27 +608,22 @@
     if (container) container.innerHTML = renderArrowRows();
   }
 
-  function zoneTypeLabel(type) {
-    return { strong: "强侧", middle: "中路", last: "底线" }[type] || type;
-  }
-
   function renderZoneRows() {
     if (state.zones.length === 0) {
       return `<p class="empty-state">暂无区域高亮，点击"新增区域"后可在球场上拖动方块调整位置和大小。</p>`;
     }
     return state.zones.map((zone, index) => `
       <fieldset class="editor-arrow">
-        <label>类型
-          <select data-zone-field="type" data-zone-index="${index}">
-            ${["strong", "middle", "last"].map((type) => `
-              <option value="${type}" ${zone.type === type ? "selected" : ""}>${zoneTypeLabel(type)}</option>
-            `).join("")}
-          </select>
-        </label>
         <label>名称
           <input type="text" data-zone-field="label" data-zone-index="${index}"
             value="${escapeHtml(zone.label || "")}" placeholder="例如：强侧压迫">
         </label>
+        <div class="zone-color-picker" role="group" aria-label="区域颜色">
+          ${ZONE_COLORS.map((color) => `
+            <button type="button" class="zone-color-swatch" data-zone-color="${color.key}" data-zone-index="${index}"
+              style="background:${color.hex}" aria-pressed="${zoneColorKey(zone) === color.key}" aria-label="${color.key}"></button>
+          `).join("")}
+        </div>
         <button type="button" class="icon-text-button" data-delete-zone="${index}">删除区域</button>
       </fieldset>
     `).join("");
@@ -980,7 +990,7 @@
     }
     const addZoneBtn = event.target.closest("[data-add-zone]");
     if (addZoneBtn) {
-      state.zones.push({ label: "新区域", type: "middle", x: 40, y: 40, width: 20, height: 20 });
+      state.zones.push({ label: "新区域", color: "red", x: 40, y: 40, width: 20, height: 20 });
       state.editTool = "zone";
       syncEditorToolButtons();
       renderCourt();
@@ -992,6 +1002,17 @@
       state.zones.splice(Number(deleteZoneBtn.dataset.deleteZone), 1);
       renderCourt();
       refreshZoneEditorList();
+      return;
+    }
+    const zoneColorSwatch = event.target.closest("[data-zone-color]");
+    if (zoneColorSwatch) {
+      const zone = state.zones[Number(zoneColorSwatch.dataset.zoneIndex)];
+      if (zone) {
+        zone.color = zoneColorSwatch.dataset.zoneColor;
+        delete zone.type;
+        renderCourt();
+        refreshZoneEditorList();
+      }
       return;
     }
     const roleChip = event.target.closest("[data-arrow-role]");
@@ -1016,14 +1037,6 @@
         renderCourt();
       }
       return;
-    }
-    const zoneTypeSelect = event.target.closest('[data-zone-field="type"]');
-    if (zoneTypeSelect) {
-      const zone = state.zones[Number(zoneTypeSelect.dataset.zoneIndex)];
-      if (zone) {
-        zone.type = zoneTypeSelect.value;
-        renderCourt();
-      }
     }
   });
 
@@ -1076,7 +1089,7 @@
     const zones = state.zones.map((zone) => {
       const clean = {
         label: (zone.label || "").trim() || "区域",
-        type: zone.type || "middle",
+        color: zoneColorKey(zone),
         x: Number(zone.x.toFixed(1)),
         y: Number(zone.y.toFixed(1)),
         width: Number(zone.width.toFixed(1)),
