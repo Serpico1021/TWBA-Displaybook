@@ -2,6 +2,7 @@
   const validation = window.TWBAContentValidation;
   const db = window.TWBAContentDB;
   const builtinPackages = window.TWBA_BUILTIN_PLAYBOOKS || [];
+  const customPackages = window.TWBA_CUSTOM_PLAYBOOKS || [];
   let fallback = false;
   let memoryPackages = [];
 
@@ -22,10 +23,17 @@
     }));
   }
 
-  async function seedBuiltinPackages() {
-    const prepared = builtinPackages.map((contentPackage) => preparePackage(contentPackage, "builtin"));
+  function prepareAll(rawPackages, source) {
+    return rawPackages.map((contentPackage) => preparePackage(contentPackage, source));
+  }
+
+  async function seedPackages(prepared) {
     if (fallback) {
-      if (memoryPackages.length === 0) memoryPackages = prepared;
+      prepared.forEach((contentPackage) => {
+        if (!memoryPackages.some((item) => item.playbook.id === contentPackage.playbook.id)) {
+          memoryPackages.push(contentPackage);
+        }
+      });
       return;
     }
     const existing = await db.getPlaybooks();
@@ -34,15 +42,21 @@
     await Promise.all(missing.map((contentPackage) => db.savePackage(contentPackage)));
   }
 
+  async function seedAllPackages() {
+    await seedPackages(prepareAll(builtinPackages, "builtin"));
+    await seedPackages(prepareAll(customPackages, "imported"));
+  }
+
   async function init() {
     try {
       await db.open();
       fallback = false;
-      await seedBuiltinPackages();
+      await seedAllPackages();
       return getLibrary();
     } catch (error) {
       fallback = true;
-      memoryPackages = builtinPackages.map((contentPackage) => preparePackage(contentPackage, "builtin"));
+      memoryPackages = [];
+      await seedAllPackages();
       const library = await getLibrary();
       library.message = `IndexedDB 不可用，已使用本次页面内存数据：${error.message}`;
       return library;

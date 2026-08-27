@@ -149,7 +149,7 @@ h2 {
 
 .court-wrap {
   position: relative;
-  width: min(100%, calc((100vh - 125px) * 15 / 14));
+  width: min(100%, calc((100vh - 190px) * 15 / 14));
   aspect-ratio: 15 / 14;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -244,6 +244,10 @@ h2 {
 
 .library-actions--pair {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.library-actions--single {
+  grid-template-columns: 1fr;
 }
 
 .library-actions .icon-text-button {
@@ -692,11 +696,13 @@ noscript {
   color: var(--danger);
 }
 
-/* Forward design spec: playback transport (dynamic replay) and tactical
-   annotation glyphs. Not wired to JS yet; these classes are the visual
-   contract for those features. The freehand draw toolbar below this
-   block (.draw-toolbar / .draw-swatch / .draw-clear / .draw-stroke) is
-   wired up in app.js. */
+/* Rotation playback transport: animates markers along bound arrows.
+   Wired up in app.js (#transport). The tactical annotation glyphs below
+   (.annotation-run / .annotation-dribble / .annotation-screen) remain a
+   forward design spec for a future freehand marker tool and are not
+   wired to JS yet. The freehand draw toolbar
+   (.draw-toolbar / .draw-swatch / .draw-clear / .draw-stroke) is wired
+   up in app.js. */
 
 .transport-bar {
   display: flex;
@@ -707,6 +713,15 @@ noscript {
   background: var(--surface-raised);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+}
+
+.transport-bar.is-disabled {
+  opacity: 0.55;
+}
+
+.transport-bar.is-disabled .transport-track {
+  pointer-events: none;
+  cursor: not-allowed;
 }
 
 .transport-play {
@@ -722,12 +737,18 @@ noscript {
   cursor: pointer;
 }
 
+.transport-play:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .transport-track {
   position: relative;
   flex: 1 1 auto;
   height: 4px;
   border-radius: 999px;
   background: var(--line);
+  cursor: pointer;
 }
 
 .transport-fill {

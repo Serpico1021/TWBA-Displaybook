@@ -3,6 +3,7 @@
   const contentTypes = ["defense", "offense"];
   const arrowTypes = ["rotation", "help", "pass"];
   const arrowStyles = ["solid", "dashed", "wavy", "screen"];
+  const moverTypes = ["defender", "offense", "ball"];
   const zoneTypes = ["strong", "middle", "last"];
 
   function clone(value) {
@@ -83,6 +84,19 @@
         });
       }
       if (arrow.label !== undefined) requireText(arrow.label, `${label}.label`);
+      if (arrow.mover !== undefined) {
+        if (!isObject(arrow.mover)) fail(`${label}.mover 必须是对象。`);
+        if (!moverTypes.includes(arrow.mover.type)) {
+          fail(`${label}.mover.type 必须是 ${moverTypes.join("/")} 之一。`);
+        }
+        if (arrow.mover.type === "defender" && !roles.includes(arrow.mover.role)) {
+          fail(`${label}.mover.role 必须是有效号码。`);
+        }
+        if (arrow.mover.type === "offense" &&
+          (typeof arrow.mover.index !== "number" || Number.isNaN(arrow.mover.index) || arrow.mover.index < 0)) {
+          fail(`${label}.mover.index 必须是非负整数。`);
+        }
+      }
     });
   }
 

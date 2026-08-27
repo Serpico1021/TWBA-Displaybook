@@ -22,6 +22,19 @@
         </div>
         <div class="team-bar" aria-hidden="true"></div>
         <div id="court" class="court-wrap" aria-label="FIBA半场"></div>
+        <div id="transport" class="transport-bar" aria-label="轮转播放控制">
+          <button id="transportPlayBtn" class="transport-play" type="button" aria-pressed="false" aria-label="播放轮转演示">▶</button>
+          <div id="transportTrack" class="transport-track" role="slider" aria-label="播放进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div id="transportFill" class="transport-fill" style="width:0%"></div>
+            <div id="transportThumb" class="transport-thumb" style="left:0%"></div>
+          </div>
+          <span id="transportTime" class="transport-time">暂无可播放轮转</span>
+          <div class="transport-speed" role="group" aria-label="播放速度">
+            <button type="button" data-speed="0.5" aria-pressed="false">0.5x</button>
+            <button type="button" data-speed="1" aria-pressed="true">1x</button>
+            <button type="button" data-speed="2" aria-pressed="false">2x</button>
+          </div>
+        </div>
       </section>
 
       <aside class="side-panel" aria-label="情景与职责说明">
@@ -35,6 +48,17 @@
             <button id="importBtn" class="icon-text-button" type="button">导入 JSON</button>
             <button id="deletePlaybookBtn" class="icon-text-button" type="button">删除导入</button>
             <button id="restoreBtn" class="icon-text-button" type="button">恢复默认</button>
+          </div>
+          <div class="library-actions library-actions--single">
+            <button id="exportPlaybookBtn" class="icon-text-button" type="button">导出当前战术包为 JSON</button>
+          </div>
+          <div class="library-actions library-actions--single">
+            <button id="exportCustomContentBtn" class="icon-text-button" type="button">导出为项目数据文件（custom-content.js）</button>
+          </div>
+          <p class="editor-hint">导出后覆盖 src/custom-content.js，再照常 git add+commit+push，自定义/导入内容即可随项目一起打包、上传 GitHub。</p>
+          <div class="library-actions library-actions--pair">
+            <button id="newDefensePlaybookBtn" class="icon-text-button" type="button">新建防守包</button>
+            <button id="newOffensePlaybookBtn" class="icon-text-button" type="button">新建进攻包</button>
           </div>
           <input id="importFile" type="file" accept="application/json,.json" hidden>
           <p id="libraryStatus" class="library-status" aria-live="polite"></p>
@@ -65,6 +89,7 @@
     </main>
     <noscript>此页面需要启用 JavaScript 才能显示战术情景。</noscript>
     <script src="./src/builtin-content.js"></script>
+    <script src="./src/custom-content.js"></script>
     <script src="./src/content-validation.js"></script>
     <script src="./src/content-db.js"></script>
     <script src="./src/content-service.js"></script>

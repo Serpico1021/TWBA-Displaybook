@@ -37,7 +37,8 @@
     offensePositions: [],
     positions: {},
     ball: { x: 50, y: 20 },
-    dragTarget: null
+    dragTarget: null,
+    animation: { playing: false, progress: 0, speed: 1, raf: null, lastTs: null }
   };
 
   const court = document.querySelector("#court");
@@ -58,7 +59,17 @@
   const importFile = document.querySelector("#importFile");
   const deletePlaybookBtn = document.querySelector("#deletePlaybookBtn");
   const restoreBtn = document.querySelector("#restoreBtn");
+  const exportPlaybookBtn = document.querySelector("#exportPlaybookBtn");
+  const exportCustomContentBtn = document.querySelector("#exportCustomContentBtn");
+  const newDefensePlaybookBtn = document.querySelector("#newDefensePlaybookBtn");
+  const newOffensePlaybookBtn = document.querySelector("#newOffensePlaybookBtn");
   const libraryStatus = document.querySelector("#libraryStatus");
+  const transportEl = document.querySelector("#transport");
+  const transportPlayBtn = document.querySelector("#transportPlayBtn");
+  const transportTrack = document.querySelector("#transportTrack");
+  const transportFill = document.querySelector("#transportFill");
+  const transportThumb = document.querySelector("#transportThumb");
+  const transportTime = document.querySelector("#transportTime");
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -132,6 +143,7 @@
     state.zones = clone((scenario && scenario.zones) || []);
     state.strokes = [];
     state.editTool = "none";
+    resetAnimation();
   }
 
   async function refreshLibrary(preferredPlaybookId, preferredScenarioId) {
@@ -195,16 +207,21 @@
     return bodies + handles;
   }
 
-  function renderOffense(scenario) {
+  function renderOffense(scenario, movedMap) {
     if (!state.showOffense) return "";
     const offense = state.offensePositions.length > 0 ? state.offensePositions : scenario.offense || [];
-    return offense.map((player, index) => `
-      <g data-marker="offense" data-index="${index}" class="offense-marker" transform="translate(${number(player.x + offenseVisualOffset.x)} ${number(player.y + offenseVisualOffset.y)})">
+    return offense.map((player, index) => {
+      const moved = movedMap.get(`offense:${index}`);
+      const x = moved ? moved.x : player.x;
+      const y = moved ? moved.y : player.y;
+      return `
+      <g data-marker="offense" data-index="${index}" class="offense-marker" transform="translate(${number(x + offenseVisualOffset.x)} ${number(y + offenseVisualOffset.y)})">
         <circle class="hit-target" r="${number(markerSize.offenseHitRadius)}"></circle>
         <circle r="${number(markerSize.offenseRadius)}"></circle>
         <text y="1">${escapeHtml(String(index + 1))}</text>
       </g>
-    `).join("");
+    `;
+    }).join("");
   }
 
   function buildWavyPath(from, to) {
@@ -246,24 +263,115 @@
     };
   }
 
+  function moverKey(mover) {
+    if (!mover) return null;
+    if (mover.type === "defender") return `defender:${mover.role}`;
+    if (mover.type === "offense") return `offense:${mover.index}`;
+    if (mover.type === "ball") return "ball";
+    return null;
+  }
+
+  function easeInOutQuad(t) {
+    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  }
+
+  function animatableArrows() {
+    return state.arrows.filter((arrow) => arrow.mover);
+  }
+
+  function arrowFromPoint(arrow) {
+    if (!arrow.mover) return arrow.from;
+    if (arrow.mover.type === "defender") {
+      const point = state.positions[arrow.mover.role];
+      return point ? { x: point.x, y: point.y } : arrow.from;
+    }
+    if (arrow.mover.type === "offense") {
+      const player = state.offensePositions[arrow.mover.index];
+      return player
+        ? { x: player.x + offenseVisualOffset.x, y: player.y + offenseVisualOffset.y }
+        : arrow.from;
+    }
+    if (arrow.mover.type === "ball") {
+      return { x: state.ball.x + ballVisualOffset.x, y: state.ball.y + ballVisualOffset.y };
+    }
+    return arrow.from;
+  }
+
+  function animatedMoverMap() {
+    const map = new Map();
+    if (state.animation.progress <= 0) return map;
+    const t = easeInOutQuad(Math.min(1, state.animation.progress));
+    state.arrows.forEach((arrow) => {
+      const key = moverKey(arrow.mover);
+      if (!key || map.has(key)) return;
+      const from = arrowFromPoint(arrow);
+      map.set(key, {
+        x: from.x + (arrow.to.x - from.x) * t,
+        y: from.y + (arrow.to.y - from.y) * t
+      });
+    });
+    return map;
+  }
+
+  function stopAnimation() {
+    if (state.animation.raf) cancelAnimationFrame(state.animation.raf);
+    state.animation.raf = null;
+    state.animation.playing = false;
+    state.animation.lastTs = null;
+  }
+
+  function resetAnimation() {
+    stopAnimation();
+    state.animation.progress = 0;
+  }
+
+  function resolveMoverFromEvent(event) {
+    const defender = event.target.closest("[data-marker='defender']");
+    if (defender) {
+      const role = defender.dataset.role;
+      const point = state.positions[role];
+      if (!point) return null;
+      return { point: { x: point.x, y: point.y }, ref: { type: "defender", role } };
+    }
+    const offense = event.target.closest("[data-marker='offense']");
+    if (offense) {
+      const index = Number(offense.dataset.index);
+      const player = state.offensePositions[index];
+      if (!player) return null;
+      return {
+        point: { x: player.x + offenseVisualOffset.x, y: player.y + offenseVisualOffset.y },
+        ref: { type: "offense", index }
+      };
+    }
+    const ball = event.target.closest("[data-marker='ball']");
+    if (ball) {
+      return {
+        point: { x: state.ball.x + ballVisualOffset.x, y: state.ball.y + ballVisualOffset.y },
+        ref: { type: "ball" }
+      };
+    }
+    return null;
+  }
+
   function renderArrow(arrow) {
     const style = arrow.style || "solid";
     const typeClass = `arrow-${escapeHtml(arrow.type)}`;
     const title = `<title>${escapeHtml(arrow.label || arrow.type)}</title>`;
+    const from = arrowFromPoint(arrow);
 
     if (style === "wavy") {
       return `
-        <path class="arrow arrow-wavy ${typeClass}" d="${buildWavyPath(arrow.from, arrow.to)}"
+        <path class="arrow arrow-wavy ${typeClass}" d="${buildWavyPath(from, arrow.to)}"
           marker-end="url(#arrow-${escapeHtml(arrow.type)})">${title}</path>
       `;
     }
 
     if (style === "screen") {
-      const bar = screenBarPoints(arrow.from, arrow.to);
+      const bar = screenBarPoints(from, arrow.to);
       return `
         <g class="arrow-screen-group">
           <line class="arrow arrow-screen ${typeClass}"
-            x1="${number(arrow.from.x)}" y1="${number(arrow.from.y)}"
+            x1="${number(from.x)}" y1="${number(from.y)}"
             x2="${number(arrow.to.x)}" y2="${number(arrow.to.y)}">${title}</line>
           <line class="arrow-screen-bar ${typeClass}"
             x1="${number(bar.x1)}" y1="${number(bar.y1)}" x2="${number(bar.x2)}" y2="${number(bar.y2)}"></line>
@@ -274,7 +382,7 @@
     const dashClass = style === "dashed" ? "arrow-dashed" : "";
     return `
       <line class="arrow ${typeClass} ${dashClass}"
-        x1="${number(arrow.from.x)}" y1="${number(arrow.from.y)}"
+        x1="${number(from.x)}" y1="${number(from.y)}"
         x2="${number(arrow.to.x)}" y2="${number(arrow.to.y)}"
         marker-end="url(#arrow-${escapeHtml(arrow.type)})">${title}</line>
     `;
@@ -287,11 +395,12 @@
       .map((arrow) => renderArrow(arrow)).join("");
   }
 
-  function renderBall() {
-    const hitX = number(state.ball.x);
-    const hitY = number(state.ball.y);
-    const x = state.ball.x + ballVisualOffset.x;
-    const y = state.ball.y + ballVisualOffset.y;
+  function renderBall(movedMap) {
+    const base = movedMap.get("ball") || state.ball;
+    const hitX = number(base.x);
+    const hitY = number(base.y);
+    const x = base.x + ballVisualOffset.x;
+    const y = base.y + ballVisualOffset.y;
     return `
       <g data-marker="ball" class="ball-marker" tabindex="0" role="button" aria-label="篮球">
         <circle class="hit-target" cx="${hitX}" cy="${hitY}" r="${number(markerSize.ballHitRadius)}"></circle>
@@ -302,10 +411,11 @@
     `;
   }
 
-  function renderDefenders() {
+  function renderDefenders(movedMap) {
     return roles.map((role) => {
-      const point = state.positions[role];
-      if (!point) return "";
+      const basePoint = state.positions[role];
+      if (!basePoint) return "";
+      const point = movedMap.get(`defender:${role}`) || basePoint;
       const focusedClass = sameRole(role) ? "is-focused" : "is-muted";
       return `
         <g data-marker="defender" data-role="${role}" class="defender-marker ${focusedClass}"
@@ -361,6 +471,7 @@
       court.innerHTML = `<div class="empty-state">暂无战术情景数据。</div>`;
       return;
     }
+    const movedMap = animatedMoverMap();
     court.innerHTML = `
       <svg class="court-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="FIBA半场示意图">
         <defs>
@@ -376,10 +487,10 @@
         </defs>
         ${renderCourtLines()}
         ${renderZones()}
-        ${renderOffense(scenario)}
+        ${renderOffense(scenario, movedMap)}
         ${renderArrows()}
-        ${renderBall()}
-        ${renderDefenders()}
+        ${renderBall(movedMap)}
+        ${renderDefenders(movedMap)}
         ${renderDrawLayer()}
       </svg>
       ${renderDrawToolbar()}
@@ -432,6 +543,14 @@
     return { solid: "实线·跑动", dashed: "虚线·掩护跑位", wavy: "波浪线·运球", screen: "挡拆·丁字" }[style] || style;
   }
 
+  function moverLabel(mover) {
+    if (!mover) return "未绑定起点（仅示意，不参与播放演示）";
+    if (mover.type === "defender") return `播放起点：${mover.role}号防守人`;
+    if (mover.type === "offense") return `播放起点：进攻${mover.index + 1}号位`;
+    if (mover.type === "ball") return "播放起点：篮球";
+    return "未绑定起点（仅示意，不参与播放演示）";
+  }
+
   function renderArrowRows() {
     if (state.arrows.length === 0) {
       return `<p class="empty-state">暂无箭头，点击下方按钮后在球场空白处拖拽绘制。</p>`;
@@ -461,6 +580,7 @@
             <input type="text" data-arrow-field="label" data-arrow-index="${index}"
               value="${escapeHtml(arrow.label || "")}" placeholder="例如：1号前压">
           </label>
+          <p class="editor-hint">${moverLabel(arrow.mover)}</p>
           <div class="editor-arrow-roles" aria-label="适用视角，不选则所有视角可见">${roleChips}</div>
           <button type="button" class="icon-text-button" data-delete-arrow="${index}">删除箭头</button>
         </fieldset>
@@ -538,7 +658,7 @@
         ${cards}
         <div class="editor-arrows">
           <h3>轮转箭头</h3>
-          <p class="editor-hint">开启绘制后，在球场空白处拖拽即可新增箭头；保存后成为该情景的默认标注，非临时讲解。</p>
+          <p class="editor-hint">开启绘制后，从球员或篮球图标按住拖拽，可绑定其为播放起点（支持下方"轮转播放"动态演示）；在空白处拖拽则只作为示意箭头。保存后成为该情景的默认标注，非临时讲解。</p>
           <button type="button" class="icon-text-button editor-tool-toggle" data-toggle-arrow-tool
             aria-pressed="${state.editTool === "arrow"}">
             ${state.editTool === "arrow" ? "● 正在绘制箭头（点击停止）" : "在球场上绘制箭头"}
@@ -604,6 +724,7 @@
     renderRoleButtons();
     renderCourt();
     renderExplanation();
+    updateTransportUI();
   }
 
   function loadScenario(id) {
@@ -617,6 +738,7 @@
     state.zones = clone(scenario.zones || []);
     state.strokes = [];
     state.editTool = "none";
+    resetAnimation();
     render();
   }
 
@@ -691,6 +813,7 @@
     state.editMode = !state.editMode;
     state.editTool = "none";
     if (state.editMode) state.drawMode = false;
+    resetAnimation();
     render();
   });
   drawModeBtn.addEventListener("click", () => {
@@ -699,7 +822,98 @@
       state.editMode = false;
       state.editTool = "none";
     }
+    resetAnimation();
     render();
+  });
+
+  function transportStatusText() {
+    if (state.editMode || state.drawMode) return "编辑中，退出后可播放";
+    if (animatableArrows().length === 0) return "暂无可播放轮转";
+    return `${Math.round(state.animation.progress * 100)}%`;
+  }
+
+  function updateTransportUI() {
+    const disabled = animatableArrows().length === 0 || state.editMode || state.drawMode;
+    transportPlayBtn.disabled = disabled;
+    transportEl.classList.toggle("is-disabled", disabled);
+    transportPlayBtn.textContent = state.animation.playing ? "⏸" : "▶";
+    transportPlayBtn.setAttribute("aria-pressed", String(state.animation.playing));
+    const pct = Math.round(state.animation.progress * 100);
+    transportFill.style.width = `${pct}%`;
+    transportThumb.style.left = `${pct}%`;
+    transportTrack.setAttribute("aria-valuenow", String(pct));
+    transportTime.textContent = transportStatusText();
+    transportEl.querySelectorAll("[data-speed]").forEach((btn) => {
+      btn.setAttribute("aria-pressed", String(Number(btn.dataset.speed) === state.animation.speed));
+    });
+  }
+
+  function stepAnimation(ts) {
+    if (!state.animation.playing) return;
+    if (state.animation.lastTs == null) state.animation.lastTs = ts;
+    const dt = (ts - state.animation.lastTs) / 1000;
+    state.animation.lastTs = ts;
+    const baseDuration = 2.4;
+    state.animation.progress = Math.min(1, state.animation.progress + (dt * state.animation.speed) / baseDuration);
+    renderCourt();
+    updateTransportUI();
+    if (state.animation.progress >= 1) {
+      stopAnimation();
+      return;
+    }
+    state.animation.raf = requestAnimationFrame(stepAnimation);
+  }
+
+  function playAnimation() {
+    if (animatableArrows().length === 0 || state.editMode || state.drawMode) return;
+    if (state.animation.progress >= 1) state.animation.progress = 0;
+    state.animation.playing = true;
+    state.animation.lastTs = null;
+    state.animation.raf = requestAnimationFrame(stepAnimation);
+    updateTransportUI();
+  }
+
+  function pauseAnimation() {
+    stopAnimation();
+    updateTransportUI();
+  }
+
+  transportPlayBtn.addEventListener("click", () => {
+    if (state.animation.playing) pauseAnimation(); else playAnimation();
+  });
+
+  transportEl.addEventListener("click", (event) => {
+    const speedBtn = event.target.closest("[data-speed]");
+    if (!speedBtn) return;
+    state.animation.speed = Number(speedBtn.dataset.speed);
+    updateTransportUI();
+  });
+
+  function seekFromEvent(event) {
+    const rect = transportTrack.getBoundingClientRect();
+    const ratio = rect.width > 0 ? Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)) : 0;
+    state.animation.progress = ratio;
+    renderCourt();
+    updateTransportUI();
+  }
+
+  let isSeekingTransport = false;
+  transportTrack.addEventListener("pointerdown", (event) => {
+    if (animatableArrows().length === 0 || state.editMode || state.drawMode) return;
+    pauseAnimation();
+    isSeekingTransport = true;
+    transportTrack.setPointerCapture(event.pointerId);
+    seekFromEvent(event);
+  });
+  transportTrack.addEventListener("pointermove", (event) => {
+    if (!isSeekingTransport) return;
+    seekFromEvent(event);
+  });
+  transportTrack.addEventListener("pointerup", (event) => {
+    isSeekingTransport = false;
+    if (transportTrack.hasPointerCapture(event.pointerId)) {
+      transportTrack.releasePointerCapture(event.pointerId);
+    }
   });
 
   court.addEventListener("click", (event) => {
@@ -739,6 +953,7 @@
     if (event.target.closest("[data-edit-cancel]")) {
       state.editMode = false;
       state.editTool = "none";
+      resetAnimation();
       render();
       return;
     }
@@ -845,8 +1060,9 @@
       };
     });
     const arrows = state.arrows.map((arrow) => {
+      const from = arrowFromPoint(arrow);
       const clean = {
-        from: { x: arrow.from.x, y: arrow.from.y },
+        from: { x: from.x, y: from.y },
         to: { x: arrow.to.x, y: arrow.to.y },
         type: arrow.type || "rotation",
         style: arrow.style || "solid"
@@ -854,6 +1070,7 @@
       if (arrow.roles && arrow.roles.length > 0) clean.roles = arrow.roles;
       const label = (arrow.label || "").trim();
       if (label) clean.label = label;
+      if (arrow.mover) clean.mover = arrow.mover;
       return clean;
     });
     const zones = state.zones.map((zone) => {
@@ -886,6 +1103,7 @@
       await window.TWBAContentService.updateScenario(state.playbookId, scenario.id, patch);
       state.editMode = false;
       state.editTool = "none";
+      resetAnimation();
       await refreshLibrary(state.playbookId, scenario.id);
       setStatus("已保存修改。", "success");
     } catch (error) {
@@ -919,6 +1137,7 @@
     state.zones = clone((scenario && scenario.zones) || []);
     state.strokes = [];
     state.editTool = "none";
+    resetAnimation();
     setStatus("");
     render();
   });
@@ -971,6 +1190,131 @@
     }
   });
 
+  function buildExportPackage(playbook) {
+    const { scenarios, ...playbookOnly } = playbook;
+    return {
+      schemaVersion: 1,
+      playbook: playbookOnly,
+      scenarios: clone(scenarios || [])
+    };
+  }
+
+  async function saveTextFile(filename, content, mimeType) {
+    if (window.showSaveFilePicker) {
+      try {
+        const extension = filename.includes(".") ? `.${filename.split(".").pop()}` : "";
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{ description: filename, accept: { [mimeType]: extension ? [extension] : [] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        return true;
+      } catch (error) {
+        if (error && error.name === "AbortError") return false;
+        // fall through to plain download if the picker itself failed
+      }
+    }
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    return true;
+  }
+
+  async function downloadJson(filename, data) {
+    await saveTextFile(filename, JSON.stringify(data, null, 2), "application/json");
+  }
+
+  function buildCustomContentSource(playbooks) {
+    const packages = playbooks
+      .filter((playbook) => playbook.source !== "builtin")
+      .map((playbook) => buildExportPackage(playbook));
+    return `window.TWBA_CUSTOM_PLAYBOOKS = ${JSON.stringify(packages, null, 2)};\n`;
+  }
+
+  exportPlaybookBtn.addEventListener("click", async () => {
+    const playbook = getPlaybook();
+    if (!playbook) {
+      setStatus("没有可导出的战术包。", "error");
+      return;
+    }
+    if (state.editMode) {
+      setStatus("导出的是最近一次已保存的内容，请先保存修改再导出。", "muted");
+    }
+    await downloadJson(`${playbook.id || "playbook"}.json`, buildExportPackage(playbook));
+    setStatus(`已导出：${playbook.title}`, "success");
+  });
+
+  exportCustomContentBtn.addEventListener("click", async () => {
+    const playbooks = state.library.playbooks || [];
+    const customOnly = playbooks.filter((playbook) => playbook.source !== "builtin");
+    if (customOnly.length === 0) {
+      setStatus("没有可导出的自定义/导入内容。", "error");
+      return;
+    }
+    if (state.editMode) {
+      setStatus("导出的是最近一次已保存的内容，请先保存修改再导出。", "muted");
+    }
+    const source = buildCustomContentSource(playbooks);
+    await saveTextFile("custom-content.js", source, "text/javascript");
+    setStatus(`已导出 ${customOnly.length} 个战术包，覆盖 src/custom-content.js 后 git add+commit+push 即可。`, "success");
+  });
+
+  async function createPlaybook(type) {
+    const defaultTitle = type === "offense" ? "新进攻战术包" : "新防守战术包";
+    const title = window.prompt("战术包名称", defaultTitle);
+    if (title === null) return;
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      setStatus("战术包名称不能为空。", "error");
+      return;
+    }
+    const id = `custom-${type}-${Date.now()}`;
+    const responsibilities = {};
+    roles.forEach((role) => {
+      responsibilities[role] = { where: "待补充", watch: "待补充", why: "待补充" };
+    });
+    const packageData = {
+      schemaVersion: 1,
+      playbook: { id, title: trimmedTitle, type, version: "1.0" },
+      scenarios: [{
+        id: `${id}-s1`,
+        title: "情景 1",
+        principle: "",
+        ball: { x: 50, y: 20 },
+        offense: [],
+        defenders: {
+          "1": { x: 50, y: 15 },
+          "2": { x: 25, y: 30 },
+          "3": { x: 75, y: 30 },
+          "4": { x: 35, y: 55 },
+          "5": { x: 65, y: 55 }
+        },
+        responsibilities,
+        coachNotes: ""
+      }]
+    };
+    try {
+      const playbook = await window.TWBAContentService.importPackage(packageData);
+      await refreshLibrary(playbook.id);
+      state.editMode = true;
+      render();
+      setStatus(`已新建战术包「${playbook.title}」，可在编辑模式中完善内容。`, "success");
+    } catch (error) {
+      setStatus(`新建失败：${error.message}`, "error");
+    }
+  }
+
+  newDefensePlaybookBtn.addEventListener("click", () => createPlaybook("defense"));
+  newOffensePlaybookBtn.addEventListener("click", () => createPlaybook("offense"));
+
   court.addEventListener("pointerdown", (event) => {
     if (state.drawMode) {
       if (event.target.closest(".draw-toolbar")) return;
@@ -981,6 +1325,19 @@
       renderCourt();
       return;
     }
+    const arrowToolActive = state.editMode && state.editTool === "arrow";
+    if (arrowToolActive) {
+      const mover = resolveMoverFromEvent(event);
+      const point = mover ? mover.point : pointFromEvent(event);
+      const defaultType = mover && mover.ref.type === "ball" ? "pass" : "rotation";
+      const arrow = { from: point, to: point, type: defaultType, style: "solid", label: "" };
+      if (mover) arrow.mover = mover.ref;
+      state.arrows.push(arrow);
+      state.dragTarget = { type: "arrow", index: state.arrows.length - 1 };
+      court.setPointerCapture(event.pointerId);
+      return;
+    }
+
     const defender = event.target.closest("[data-marker='defender']");
     const offense = event.target.closest("[data-marker='offense']");
     const ball = event.target.closest("[data-marker='ball']");
@@ -989,12 +1346,6 @@
     const zoneResize = zoneToolActive ? event.target.closest("[data-marker='zone-resize']") : null;
     const zoneRotate = zoneToolActive ? event.target.closest("[data-marker='zone-rotate']") : null;
     if (!defender && !offense && !ball && !zoneMove && !zoneResize && !zoneRotate) {
-      if (state.editMode && state.editTool === "arrow") {
-        const point = pointFromEvent(event);
-        state.arrows.push({ from: point, to: point, type: "rotation", style: "solid", label: "" });
-        state.dragTarget = { type: "arrow", index: state.arrows.length - 1 };
-        court.setPointerCapture(event.pointerId);
-      }
       return;
     }
     if (defender) {
