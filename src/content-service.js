@@ -25,10 +25,13 @@
   async function seedBuiltinPackages() {
     const prepared = builtinPackages.map((contentPackage) => preparePackage(contentPackage, "builtin"));
     if (fallback) {
-      memoryPackages = prepared;
+      if (memoryPackages.length === 0) memoryPackages = prepared;
       return;
     }
-    await Promise.all(prepared.map((contentPackage) => db.savePackage(contentPackage)));
+    const existing = await db.getPlaybooks();
+    const existingIds = new Set(existing.map((item) => item.id));
+    const missing = prepared.filter((contentPackage) => !existingIds.has(contentPackage.playbook.id));
+    await Promise.all(missing.map((contentPackage) => db.savePackage(contentPackage)));
   }
 
   async function init() {
@@ -85,6 +88,32 @@
     return contentPackage.playbook;
   }
 
+  async function updateScenario(playbookId, scenarioId, patch) {
+    const library = await getLibrary();
+    const playbook = library.playbooks.find((item) => item.id === playbookId);
+    if (!playbook) throw new Error("未找到战术包。");
+    const { scenarios: currentScenarios, ...playbookOnly } = playbook;
+    if (!currentScenarios.some((scenario) => scenario.id === scenarioId)) {
+      throw new Error("未找到情景。");
+    }
+    const scenarios = currentScenarios.map((scenario) =>
+      scenario.id === scenarioId ? { ...scenario, ...patch } : scenario
+    );
+    const contentPackage = preparePackage(
+      { schemaVersion: 1, playbook: playbookOnly, scenarios },
+      playbookOnly.source
+    );
+
+    if (fallback) {
+      memoryPackages = memoryPackages.map((item) =>
+        item.playbook.id === playbookId ? contentPackage : item
+      );
+      return contentPackage.scenarios.find((scenario) => scenario.id === scenarioId);
+    }
+    await db.savePackage(contentPackage);
+    return contentPackage.scenarios.find((scenario) => scenario.id === scenarioId);
+  }
+
   async function deleteImportedPlaybook(playbookId) {
     const playbook = await getPlaybook(playbookId);
     if (!playbook) throw new Error("未找到要删除的战术包。");
@@ -113,6 +142,7 @@
     getPlaybook,
     importPackage,
     init,
-    restoreBuiltin
+    restoreBuiltin,
+    updateScenario
   };
 })();

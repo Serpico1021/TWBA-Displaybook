@@ -29,10 +29,6 @@ window.TWBA_BUILTIN_PLAYBOOKS = [
       "4": { x: 73, y: 67, status: "baseline" },
       "5": { x: 50, y: 61, status: "middle" }
     },
-    arrows: [
-      { from: { x: 48, y: 35 }, to: { x: 48, y: 27 }, type: "rotation", roles: ["1"], label: "1号前压" },
-      { from: { x: 50, y: 66 }, to: { x: 50, y: 57 }, type: "help", roles: ["5"], label: "5号守中" }
-    ],
     zones: [
       { id: "middle", label: "中路", x: 37, y: 34, width: 26, height: 40, type: "middle" },
       { id: "baseline", label: "底线保护", x: 18, y: 66, width: 64, height: 24, type: "last" }
@@ -85,14 +81,6 @@ window.TWBA_BUILTIN_PLAYBOOKS = [
       "4": { x: 61, y: 75, status: "last-line" },
       "5": { x: 48, y: 61, status: "middle-line" }
     },
-    arrows: [
-      { from: { x: 48, y: 30 }, to: { x: 29, y: 44 }, type: "rotation", roles: ["1"], label: "压向强侧" },
-      { from: { x: 62, y: 34 }, to: { x: 46, y: 43 }, type: "rotation", roles: ["2"], label: "横移补中" },
-      { from: { x: 27, y: 67 }, to: { x: 24, y: 62 }, type: "rotation", roles: ["3"], label: "上提成线" },
-      { from: { x: 73, y: 67 }, to: { x: 61, y: 75 }, type: "help", roles: ["4"], label: "弱侧收缩" },
-      { from: { x: 50, y: 61 }, to: { x: 48, y: 61 }, type: "help", roles: ["5"], label: "中路偏强侧" },
-      { from: { x: 50, y: 22 }, to: { x: 27, y: 38 }, type: "pass", roles: ["1", "2"], label: "传球方向" }
-    ],
     zones: [
       { id: "strong-side", label: "强侧压迫", x: 0, y: 30, width: 42, height: 70, type: "strong" },
       { id: "middle-line", label: "中间三人", x: 22, y: 40, width: 34, height: 30, type: "middle" },
@@ -146,13 +134,6 @@ window.TWBA_BUILTIN_PLAYBOOKS = [
       "4": { x: 60, y: 79, status: "last-line" },
       "5": { x: 42, y: 73, status: "rim" }
     },
-    arrows: [
-      { from: { x: 24, y: 62 }, to: { x: 16, y: 75 }, type: "rotation", roles: ["3"], label: "3号扑底角" },
-      { from: { x: 29, y: 44 }, to: { x: 24, y: 55 }, type: "help", roles: ["1"], label: "1号堵回传" },
-      { from: { x: 48, y: 61 }, to: { x: 42, y: 73 }, type: "help", roles: ["5"], label: "5号补篮下" },
-      { from: { x: 61, y: 75 }, to: { x: 60, y: 79 }, type: "help", roles: ["4"], label: "4号最后保护" },
-      { from: { x: 27, y: 38 }, to: { x: 12, y: 79 }, type: "pass", roles: ["1", "3"], label: "传到底角" }
-    ],
     zones: [
       { id: "corner-trap", label: "底角压迫", x: 0, y: 67, width: 28, height: 31, type: "strong" },
       { id: "rim-cover", label: "篮下补位", x: 35, y: 69, width: 37, height: 24, type: "middle" }
@@ -205,13 +186,6 @@ window.TWBA_BUILTIN_PLAYBOOKS = [
       "4": { x: 76, y: 63, status: "middle-line" },
       "5": { x: 53, y: 62, status: "middle" }
     },
-    arrows: [
-      { from: { x: 24, y: 55 }, to: { x: 48, y: 48 }, type: "rotation", roles: ["1"], label: "1号回中" },
-      { from: { x: 46, y: 43 }, to: { x: 72, y: 45 }, type: "rotation", roles: ["2"], label: "2号先顶" },
-      { from: { x: 60, y: 79 }, to: { x: 39, y: 76 }, type: "help", roles: ["3"], label: "3号回弱侧" },
-      { from: { x: 61, y: 75 }, to: { x: 76, y: 63 }, type: "rotation", roles: ["4"], label: "4号接强侧" },
-      { from: { x: 27, y: 38 }, to: { x: 76, y: 39 }, type: "pass", roles: ["1", "2", "5"], label: "快速转移" }
-    ],
     zones: [
       { id: "middle-first", label: "先保中路", x: 35, y: 40, width: 30, height: 36, type: "middle" },
       { id: "new-strong", label: "新强侧", x: 62, y: 32, width: 38, height: 66, type: "strong" }
@@ -264,13 +238,6 @@ window.TWBA_BUILTIN_PLAYBOOKS = [
       "4": { x: 70, y: 74, status: "short-corner" },
       "5": { x: 50, y: 58, status: "high-post" }
     },
-    arrows: [
-      { from: { x: 50, y: 64 }, to: { x: 50, y: 56 }, type: "rotation", roles: ["5"], label: "5号顶高位" },
-      { from: { x: 32, y: 37 }, to: { x: 40, y: 43 }, type: "help", roles: ["1"], label: "1号收窄" },
-      { from: { x: 68, y: 37 }, to: { x: 60, y: 43 }, type: "help", roles: ["2"], label: "2号收窄" },
-      { from: { x: 22, y: 67 }, to: { x: 30, y: 74 }, type: "help", roles: ["3"], label: "3号护短角" },
-      { from: { x: 78, y: 67 }, to: { x: 70, y: 74 }, type: "help", roles: ["4"], label: "4号护弱侧" }
-    ],
     zones: [
       { id: "high-post-danger", label: "高位危险区", x: 39, y: 43, width: 22, height: 20, type: "strong" },
       { id: "rim-line", label: "篮下保护", x: 28, y: 70, width: 44, height: 22, type: "middle" }
@@ -323,13 +290,6 @@ window.TWBA_BUILTIN_PLAYBOOKS = [
       "4": { x: 66, y: 79, status: "box-out" },
       "5": { x: 50, y: 78, status: "rim-box" }
     },
-    arrows: [
-      { from: { x: 72, y: 45 }, to: { x: 70, y: 28 }, type: "rotation", roles: ["2"], label: "干扰出手" },
-      { from: { x: 48, y: 48 }, to: { x: 57, y: 40 }, type: "help", roles: ["1"], label: "长篮板" },
-      { from: { x: 31, y: 75 }, to: { x: 34, y: 77 }, type: "help", roles: ["3"], label: "卡底线" },
-      { from: { x: 69, y: 75 }, to: { x: 66, y: 79 }, type: "help", roles: ["4"], label: "卡弱侧" },
-      { from: { x: 50, y: 58 }, to: { x: 50, y: 78 }, type: "help", roles: ["5"], label: "找中路人" }
-    ],
     zones: [
       { id: "rebound", label: "篮板区", x: 27, y: 68, width: 46, height: 25, type: "middle" },
       { id: "long-board", label: "长篮板", x: 42, y: 30, width: 34, height: 20, type: "last" }

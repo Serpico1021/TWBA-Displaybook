@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "deny": [
+      "Skill(find-skills)",
+      "Skill(writing-plans)",
+      "Skill(subagent-driven-development)",
+      "Skill(using-git-worktrees)",
+      "Skill(requesting-code-review)",
+      "Skill(finishing-a-development-branch)",
+      "Skill(test-driven-development)"
+    ],
+    "allow": [
+      "Skill(brainstorming)",
+      "Skill(frontend-design)"
+    ]
+  }
+}

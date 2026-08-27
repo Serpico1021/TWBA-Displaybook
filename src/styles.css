@@ -1,38 +1,54 @@
 :root {
-  color-scheme: light;
-  --ink: #151b23;
-  --muted: #59636f;
-  --panel: #f6f8fa;
-  --line: #d0d7de;
-  --court: #d9a25f;
-  --court-line: #ffffff;
-  --defense: #0f5f7a;
-  --defense-focus: #08384a;
-  --ball: #d65f00;
-  --offense: #9b2c6b;
-  --rotation: #007a5a;
-  --help: #2458c9;
-  --pass: #8b3bb8;
-  --strong-zone: #d43f3a;
-  --middle-zone: #2f6fd6;
-  --last-zone: #228b57;
-  --shadow: 0 10px 30px rgba(21, 27, 35, 0.08);
+  color-scheme: dark;
+
+  --bg: #0b0e13;
+  --surface: #151a21;
+  --surface-raised: #1c222b;
+  --line: #2a323d;
+  --ink: #eef1f5;
+  --muted: #93a1b0;
+  --danger: #ff5c5c;
+
+  --court: #10202a;
+  --court-line: #eef4f2;
+
+  --defense: #33b1ff;
+  --rotation: #22d3b8;
+  --help: #8c6bff;
+
+  --offense: #ff7a45;
+  --ball: #ffd447;
+  --pass: #ff5c93;
+
+  --zone-strong: #ff4d4d;
+  --zone-middle: #4d7cff;
+  --zone-last: #33d17a;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --radius: 6px;
+  --font-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   min-width: 320px;
-  background: #e9edf2;
+  background: var(--bg);
   color: var(--ink);
   font-family: Arial, "Microsoft YaHei", sans-serif;
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -40,17 +56,34 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
+input[type="checkbox"] {
+  accent-color: var(--defense);
+}
+
+:focus-visible {
+  outline: 2px solid var(--defense);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
 .app-shell {
-  min-height: 100vh;
   display: grid;
   grid-template-columns: minmax(0, 1.9fr) minmax(320px, 0.9fr);
-  gap: 16px;
-  padding: 16px;
+  gap: 14px;
+  padding: 14px;
+  height: 100vh;
 }
 
 .court-panel,
 .side-panel {
   min-width: 0;
+  min-height: 0;
 }
 
 .court-panel {
@@ -66,11 +99,32 @@ button {
   gap: 16px;
 }
 
+.top-bar-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+#editModeBtn[aria-pressed="true"] {
+  border-color: var(--defense);
+  background: rgba(51, 177, 255, 0.14);
+  color: var(--defense);
+  font-weight: 700;
+}
+
+.team-bar {
+  height: 3px;
+  margin: 10px 0 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--defense), var(--ball), var(--offense));
+}
+
 .kicker {
   margin: 0 0 4px;
   color: var(--muted);
   font-size: 13px;
   font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -84,6 +138,7 @@ p {
 h1 {
   margin-bottom: 0;
   font-size: 30px;
+  font-weight: 800;
   line-height: 1.15;
 }
 
@@ -93,24 +148,30 @@ h2 {
 }
 
 .court-wrap {
-  width: min(100%, calc((100vh - 104px) * 15 / 14));
+  position: relative;
+  width: min(100%, calc((100vh - 125px) * 15 / 14));
   aspect-ratio: 15 / 14;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--court);
   overflow: hidden;
   box-shadow: var(--shadow);
   touch-action: none;
 }
 
+.court-wrap.is-editing {
+  border-color: var(--defense);
+  box-shadow: 0 0 0 1px var(--defense), var(--shadow);
+}
+
 .side-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px;
-  background: var(--panel);
+  gap: 14px;
+  padding: 14px;
+  background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius);
   overflow-y: auto;
   box-shadow: var(--shadow);
 }
@@ -135,29 +196,29 @@ h2 {
 
 .type-pill {
   min-width: 44px;
-  border: 1px solid rgba(15, 95, 122, 0.22);
-  border-radius: 999px;
+  border: 1px solid rgba(51, 177, 255, 0.35);
+  border-radius: var(--radius);
   padding: 4px 8px;
-  background: rgba(15, 95, 122, 0.08);
-  color: var(--defense-focus);
+  background: rgba(51, 177, 255, 0.12);
+  color: var(--defense);
   font-size: 12px;
   font-weight: 800;
   text-align: center;
 }
 
 .type-pill[data-type="offense"] {
-  border-color: rgba(214, 95, 0, 0.24);
-  background: rgba(214, 95, 0, 0.09);
-  color: #7a3100;
+  border-color: rgba(255, 122, 69, 0.4);
+  background: rgba(255, 122, 69, 0.12);
+  color: var(--offense);
 }
 
 .playbook-select {
   min-height: 40px;
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 0 10px;
-  background: #ffffff;
+  background: var(--surface-raised);
   color: var(--ink);
   font: inherit;
 }
@@ -186,7 +247,7 @@ h2 {
 }
 
 .library-status[data-tone="error"] {
-  color: #b42318;
+  color: var(--danger);
 }
 
 .scenario-list {
@@ -198,10 +259,16 @@ h2 {
 .icon-text-button {
   min-height: 40px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #ffffff;
+  border-radius: var(--radius);
+  background: var(--surface-raised);
   color: var(--ink);
   cursor: pointer;
+}
+
+.scenario-list button:hover:not([aria-pressed="true"]),
+.role-filter button:hover:not([aria-pressed="true"]),
+.icon-text-button:hover:not(:disabled) {
+  border-color: var(--defense);
 }
 
 .scenario-list button {
@@ -220,8 +287,9 @@ h2 {
   height: 24px;
   place-items: center;
   border-radius: 50%;
-  background: #edf2f7;
+  background: var(--surface);
   color: var(--muted);
+  font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 700;
 }
@@ -229,14 +297,14 @@ h2 {
 .scenario-list button[aria-pressed="true"],
 .role-filter button[aria-pressed="true"] {
   border-color: var(--defense);
-  background: #e6f4f7;
-  color: var(--defense-focus);
+  background: rgba(51, 177, 255, 0.14);
+  color: var(--defense);
   font-weight: 700;
 }
 
 .scenario-list button[aria-pressed="true"] span {
   background: var(--defense);
-  color: #ffffff;
+  color: #071019;
 }
 
 .role-filter {
@@ -245,6 +313,7 @@ h2 {
 
 .role-filter button {
   padding: 0 8px;
+  font-family: var(--font-mono);
 }
 
 .display-controls {
@@ -305,43 +374,54 @@ h2 {
 }
 
 .zone {
-  opacity: 0.18;
+  opacity: 0.22;
 }
 
 .zone-strong {
-  fill: var(--strong-zone);
+  fill: var(--zone-strong);
 }
 
 .zone-middle {
-  fill: var(--middle-zone);
+  fill: var(--zone-middle);
 }
 
 .zone-last {
-  fill: var(--last-zone);
+  fill: var(--zone-last);
 }
 
 .zone-label {
-  fill: rgba(21, 27, 35, 0.72);
+  fill: rgba(238, 244, 242, 0.85);
   font-size: 3.1px;
   font-weight: 700;
   text-anchor: middle;
   pointer-events: none;
 }
 
-.offense-marker {
+.offense-marker,
+.defender-marker {
   cursor: grab;
-  opacity: 0.88;
+  transition: opacity 120ms ease;
+}
+
+.offense-marker circle,
+.defender-marker circle {
+  stroke: rgba(11, 14, 19, 0.55);
+  stroke-width: 0.9;
 }
 
 .offense-marker circle {
-  fill: #f7f9fb;
-  stroke: var(--offense);
-  stroke-width: 0.75;
+  fill: var(--offense);
 }
 
-.offense-marker text {
-  fill: #7b1d55;
-  font-size: 3px;
+.defender-marker circle {
+  fill: var(--defense);
+}
+
+.offense-marker text,
+.defender-marker text {
+  fill: #0b0e13;
+  font-family: var(--font-mono);
+  font-size: 3.6px;
   font-weight: 700;
   text-anchor: middle;
   pointer-events: none;
@@ -361,34 +441,14 @@ h2 {
 
 .ball-marker circle {
   fill: var(--ball);
-  stroke: #7c2d12;
+  stroke: rgba(11, 14, 19, 0.55);
   stroke-width: 0.65;
 }
 
 .ball-marker path {
   fill: none;
-  stroke: #7c2d12;
+  stroke: rgba(11, 14, 19, 0.7);
   stroke-width: 0.35;
-  pointer-events: none;
-}
-
-.defender-marker {
-  cursor: grab;
-  transition: opacity 120ms ease;
-}
-
-.defender-marker circle {
-  fill: var(--defense);
-  stroke: #ffffff;
-  stroke-width: 0.9;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.22));
-}
-
-.defender-marker text {
-  fill: #ffffff;
-  font-size: 4.4px;
-  font-weight: 700;
-  text-anchor: middle;
   pointer-events: none;
 }
 
@@ -396,11 +456,8 @@ h2 {
   opacity: 0.32;
 }
 
-.defender-marker.is-focused circle {
-  fill: var(--defense-focus);
-}
-
 .defender-marker:active,
+.offense-marker:active,
 .ball-marker:active {
   cursor: grabbing;
 }
@@ -437,10 +494,10 @@ h2 {
 
 .responsibility-card {
   margin-top: 10px;
-  padding: 12px;
+  padding: 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #ffffff;
+  border-radius: var(--radius);
+  background: var(--surface-raised);
 }
 
 .responsibility-card h3 {
@@ -458,6 +515,71 @@ h2 {
   color: var(--muted);
 }
 
+.scenario-editor {
+  display: grid;
+  gap: 10px;
+}
+
+.scenario-editor label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.scenario-editor input,
+.scenario-editor textarea {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.editor-role {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+}
+
+.editor-role legend {
+  padding: 0 4px;
+  color: var(--defense);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.editor-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-actions .icon-text-button {
+  flex: 1;
+}
+
+.edit-actions [data-edit-save] {
+  border-color: var(--defense);
+  background: rgba(51, 177, 255, 0.16);
+  color: var(--defense);
+  font-weight: 700;
+}
+
 .empty-state {
   display: grid;
   min-height: 80px;
@@ -470,7 +592,151 @@ h2 {
 noscript {
   display: block;
   padding: 16px;
-  color: #8a1f11;
+  color: var(--danger);
+}
+
+/* Forward design spec: playback transport (dynamic replay), tactical
+   annotation glyphs, and the freehand draw toolbar. Not wired to JS yet;
+   these classes are the visual contract for those features. */
+
+.transport-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.transport-play {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: none;
+  background: var(--ball);
+  color: #0b0e13;
+  cursor: pointer;
+}
+
+.transport-track {
+  position: relative;
+  flex: 1 1 auto;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.transport-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: var(--ball);
+}
+
+.transport-thumb {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ball);
+  border: 2px solid var(--surface-raised);
+  transform: translate(-50%, -50%);
+}
+
+.transport-time {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.transport-speed {
+  display: flex;
+  gap: 4px;
+}
+
+.transport-speed button {
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.transport-speed button[aria-pressed="true"] {
+  border-color: var(--ball);
+  color: var(--ball);
+}
+
+.annotation-run {
+  fill: none;
+  stroke: var(--rotation);
+  stroke-width: 1.25;
+  stroke-linecap: round;
+}
+
+.annotation-dribble {
+  fill: none;
+  stroke: var(--offense);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-dasharray: 0.2 2.4;
+}
+
+.annotation-screen {
+  stroke: var(--pass);
+  stroke-width: 1.6;
+  stroke-linecap: square;
+}
+
+.draw-toolbar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  background: rgba(21, 26, 33, 0.88);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.draw-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.draw-swatch[aria-pressed="true"] {
+  border-color: var(--ink);
+}
+
+.draw-toolbar button.icon-only {
+  min-height: 26px;
+  width: 26px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  cursor: pointer;
 }
 
 @media (min-width: 1200px) {
@@ -488,11 +754,12 @@ noscript {
 @media (max-width: 860px) {
   .app-shell {
     grid-template-columns: 1fr;
+    height: auto;
     padding: 10px;
   }
 
   .side-panel {
-    max-height: none;
+    overflow-y: visible;
   }
 
   h1 {

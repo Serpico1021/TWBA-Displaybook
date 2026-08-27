@@ -1,8 +1,8 @@
 (async function () {
   const roles = ["1", "2", "3", "4", "5"];
   const markerSize = {
-    offenseRadius: 2.45,
-    offenseHitRadius: 4.6,
+    offenseRadius: 2.9,
+    offenseHitRadius: 5.2,
     defenderRadius: 2.9,
     defenderHitRadius: 5.2,
     ballRadius: 2.15,
@@ -16,6 +16,7 @@
     playbookId: "",
     scenarioId: "",
     focusedRole: "all",
+    editMode: false,
     showArrows: true,
     showOffense: true,
     showZones: true,
@@ -30,6 +31,7 @@
   const roleFilter = document.querySelector("#roleFilter");
   const explanation = document.querySelector("#explanation");
   const resetBtn = document.querySelector("#resetBtn");
+  const editModeBtn = document.querySelector("#editModeBtn");
   const toggleArrows = document.querySelector("#toggleArrows");
   const toggleOffense = document.querySelector("#toggleOffense");
   const toggleZones = document.querySelector("#toggleZones");
@@ -265,10 +267,54 @@
     }).join("");
   }
 
+  function renderExplanationEditor(scenario) {
+    const cards = roles.map((role) => {
+      const item = getResponsibility(scenario, role);
+      return `
+        <fieldset class="editor-role">
+          <legend>${role}号</legend>
+          <label>站哪里
+            <textarea data-edit-field="where" data-role="${role}" rows="2">${escapeHtml(item.where)}</textarea>
+          </label>
+          <label>看什么
+            <textarea data-edit-field="watch" data-role="${role}" rows="2">${escapeHtml(item.watch)}</textarea>
+          </label>
+          <label>为什么
+            <textarea data-edit-field="why" data-role="${role}" rows="2">${escapeHtml(item.why)}</textarea>
+          </label>
+        </fieldset>
+      `;
+    }).join("");
+
+    explanation.innerHTML = `
+      <form class="scenario-editor" data-scenario-editor>
+        <label>情景标题
+          <input type="text" data-edit-field="title" value="${escapeHtml(scenario.title)}">
+        </label>
+        <label>讲解要点
+          <textarea data-edit-field="principle" rows="2">${escapeHtml(scenario.principle || "")}</textarea>
+        </label>
+        ${cards}
+        <label>教练备注
+          <textarea data-edit-field="coachNotes" rows="2">${escapeHtml(scenario.coachNotes || "")}</textarea>
+        </label>
+        <p class="editor-hint">拖动球场上的球员/篮球可调整站位，保存修改会一并写入为新的初始站位。</p>
+        <div class="edit-actions">
+          <button type="submit" class="icon-text-button" data-edit-save>保存修改</button>
+          <button type="button" class="icon-text-button" data-edit-cancel>取消</button>
+        </div>
+      </form>
+    `;
+  }
+
   function renderExplanation() {
     const scenario = getScenario();
     if (!scenario) {
       explanation.innerHTML = `<h2>暂无情景</h2><p class="principle">请先配置战术情景数据。</p>`;
+      return;
+    }
+    if (state.editMode) {
+      renderExplanationEditor(scenario);
       return;
     }
     const visibleRoles = state.focusedRole === "all" ? roles : [state.focusedRole];
@@ -293,6 +339,8 @@
   }
 
   function render() {
+    editModeBtn.setAttribute("aria-pressed", String(state.editMode));
+    court.classList.toggle("is-editing", state.editMode);
     renderLibraryControls();
     renderScenarioButtons();
     renderRoleButtons();
@@ -342,6 +390,55 @@
   });
 
   resetBtn.addEventListener("click", () => loadScenario(state.scenarioId));
+  editModeBtn.addEventListener("click", () => {
+    state.editMode = !state.editMode;
+    render();
+  });
+
+  explanation.addEventListener("click", (event) => {
+    if (event.target.closest("[data-edit-cancel]")) {
+      state.editMode = false;
+      render();
+    }
+  });
+
+  explanation.addEventListener("submit", async (event) => {
+    const form = event.target.closest("[data-scenario-editor]");
+    if (!form) return;
+    event.preventDefault();
+    const scenario = getScenario();
+    if (!scenario) return;
+
+    const responsibilities = {};
+    roles.forEach((role) => {
+      responsibilities[role] = {
+        where: form.querySelector(`[data-edit-field="where"][data-role="${role}"]`).value.trim(),
+        watch: form.querySelector(`[data-edit-field="watch"][data-role="${role}"]`).value.trim(),
+        why: form.querySelector(`[data-edit-field="why"][data-role="${role}"]`).value.trim()
+      };
+    });
+    const patch = {
+      title: form.querySelector('[data-edit-field="title"]').value.trim(),
+      principle: form.querySelector('[data-edit-field="principle"]').value.trim(),
+      coachNotes: form.querySelector('[data-edit-field="coachNotes"]').value.trim(),
+      responsibilities,
+      defenders: clone(state.positions),
+      offense: clonePositions(state.offensePositions),
+      ball: clone(state.ball)
+    };
+
+    const saveButton = form.querySelector("[data-edit-save]");
+    saveButton.disabled = true;
+    try {
+      await window.TWBAContentService.updateScenario(state.playbookId, scenario.id, patch);
+      state.editMode = false;
+      await refreshLibrary(state.playbookId, scenario.id);
+      setStatus("已保存修改。", "success");
+    } catch (error) {
+      setStatus(`保存失败：${error.message}`, "error");
+      saveButton.disabled = false;
+    }
+  });
   toggleArrows.addEventListener("change", () => {
     state.showArrows = toggleArrows.checked;
     renderCourt();
