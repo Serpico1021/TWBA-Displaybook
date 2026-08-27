@@ -39,7 +39,9 @@
   };
 
   const court = document.querySelector("#court");
-  const scenarioList = document.querySelector("#scenarioList");
+  const scenarioSelect = document.querySelector("#scenarioSelect");
+  const addScenarioBtn = document.querySelector("#addScenarioBtn");
+  const deleteScenarioBtn = document.querySelector("#deleteScenarioBtn");
   const roleFilter = document.querySelector("#roleFilter");
   const explanation = document.querySelector("#explanation");
   const resetBtn = document.querySelector("#resetBtn");
@@ -296,18 +298,21 @@
     deletePlaybookBtn.disabled = !playbook || playbook.source !== "imported";
   }
 
-  function renderScenarioButtons() {
+  function renderScenarioOptions() {
     const scenarios = getScenarios();
     if (scenarios.length === 0) {
-      scenarioList.innerHTML = `<p class="empty-state">暂无情景。</p>`;
+      scenarioSelect.innerHTML = `<option value="">暂无情景</option>`;
+      scenarioSelect.disabled = true;
+      deleteScenarioBtn.disabled = true;
       return;
     }
-    scenarioList.innerHTML = scenarios.map((scenario, index) => {
-      const active = scenario.id === state.scenarioId;
-      return `<button type="button" data-scenario="${escapeHtml(scenario.id)}" aria-pressed="${active}">
-        <span>${index + 1}</span>${escapeHtml(scenario.title)}
-      </button>`;
-    }).join("");
+    scenarioSelect.disabled = false;
+    scenarioSelect.innerHTML = scenarios.map((scenario, index) => `
+      <option value="${escapeHtml(scenario.id)}" ${scenario.id === state.scenarioId ? "selected" : ""}>
+        ${index + 1}. ${escapeHtml(scenario.title)}
+      </option>
+    `).join("");
+    deleteScenarioBtn.disabled = scenarios.length <= 1;
   }
 
   function renderRoleButtons() {
@@ -438,7 +443,7 @@
     court.classList.toggle("is-editing", state.editMode);
     court.classList.toggle("is-drawing", state.drawMode);
     renderLibraryControls();
-    renderScenarioButtons();
+    renderScenarioOptions();
     renderRoleButtons();
     renderCourt();
     renderExplanation();
@@ -475,9 +480,44 @@
     };
   }
 
-  scenarioList.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-scenario]");
-    if (button) loadScenario(button.dataset.scenario);
+  scenarioSelect.addEventListener("change", () => {
+    if (scenarioSelect.value) loadScenario(scenarioSelect.value);
+  });
+
+  addScenarioBtn.addEventListener("click", async () => {
+    const scenario = getScenario();
+    const playbook = getPlaybook();
+    if (!scenario || !playbook) return;
+    const newScenario = clone(scenario);
+    newScenario.id = `${scenario.id}-copy-${Date.now()}`;
+    newScenario.title = `${scenario.title} 副本`;
+    try {
+      await window.TWBAContentService.addScenario(playbook.id, newScenario);
+      await refreshLibrary(playbook.id, newScenario.id);
+      state.editMode = true;
+      render();
+      setStatus("已新增情景（复制自当前情景），可在编辑模式中修改名称与内容。", "success");
+    } catch (error) {
+      setStatus(`新增失败：${error.message}`, "error");
+    }
+  });
+
+  deleteScenarioBtn.addEventListener("click", async () => {
+    const scenario = getScenario();
+    const playbook = getPlaybook();
+    if (!scenario || !playbook) return;
+    if (getScenarios().length <= 1) {
+      setStatus("至少保留一个情景，无法删除。", "error");
+      return;
+    }
+    if (!window.confirm(`删除情景「${scenario.title}」？`)) return;
+    try {
+      await window.TWBAContentService.deleteScenario(playbook.id, scenario.id);
+      await refreshLibrary(playbook.id);
+      setStatus("已删除情景。", "success");
+    } catch (error) {
+      setStatus(`删除失败：${error.message}`, "error");
+    }
   });
 
   roleFilter.addEventListener("click", (event) => {

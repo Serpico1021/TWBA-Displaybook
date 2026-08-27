@@ -114,6 +114,54 @@
     return contentPackage.scenarios.find((scenario) => scenario.id === scenarioId);
   }
 
+  async function addScenario(playbookId, scenarioData) {
+    const library = await getLibrary();
+    const playbook = library.playbooks.find((item) => item.id === playbookId);
+    if (!playbook) throw new Error("未找到战术包。");
+    const { scenarios: currentScenarios, ...playbookOnly } = playbook;
+    if (currentScenarios.some((scenario) => scenario.id === scenarioData.id)) {
+      throw new Error("情景 ID 已存在。");
+    }
+    const scenarios = [...currentScenarios, scenarioData];
+    const contentPackage = preparePackage(
+      { schemaVersion: 1, playbook: playbookOnly, scenarios },
+      playbookOnly.source
+    );
+
+    if (fallback) {
+      memoryPackages = memoryPackages.map((item) =>
+        item.playbook.id === playbookId ? contentPackage : item
+      );
+      return contentPackage.scenarios.find((scenario) => scenario.id === scenarioData.id);
+    }
+    await db.savePackage(contentPackage);
+    return contentPackage.scenarios.find((scenario) => scenario.id === scenarioData.id);
+  }
+
+  async function deleteScenario(playbookId, scenarioId) {
+    const library = await getLibrary();
+    const playbook = library.playbooks.find((item) => item.id === playbookId);
+    if (!playbook) throw new Error("未找到战术包。");
+    const { scenarios: currentScenarios, ...playbookOnly } = playbook;
+    if (currentScenarios.length <= 1) throw new Error("至少保留一个情景。");
+    if (!currentScenarios.some((scenario) => scenario.id === scenarioId)) {
+      throw new Error("未找到情景。");
+    }
+    const scenarios = currentScenarios.filter((scenario) => scenario.id !== scenarioId);
+    const contentPackage = preparePackage(
+      { schemaVersion: 1, playbook: playbookOnly, scenarios },
+      playbookOnly.source
+    );
+
+    if (fallback) {
+      memoryPackages = memoryPackages.map((item) =>
+        item.playbook.id === playbookId ? contentPackage : item
+      );
+      return;
+    }
+    await db.savePackage(contentPackage);
+  }
+
   async function deleteImportedPlaybook(playbookId) {
     const playbook = await getPlaybook(playbookId);
     if (!playbook) throw new Error("未找到要删除的战术包。");
@@ -137,7 +185,9 @@
   }
 
   window.TWBAContentService = {
+    addScenario,
     deleteImportedPlaybook,
+    deleteScenario,
     getLibrary,
     getPlaybook,
     importPackage,

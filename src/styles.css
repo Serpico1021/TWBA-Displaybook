@@ -182,7 +182,6 @@ h2 {
   box-shadow: var(--shadow);
 }
 
-.scenario-list,
 .role-filter {
   display: grid;
   gap: 8px;
@@ -235,6 +234,10 @@ h2 {
   gap: 8px;
 }
 
+.library-actions--pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .library-actions .icon-text-button {
   width: 100%;
   padding: 0 8px;
@@ -256,11 +259,6 @@ h2 {
   color: var(--danger);
 }
 
-.scenario-list {
-  grid-template-columns: 1fr;
-}
-
-.scenario-list button,
 .role-filter button,
 .icon-text-button {
   min-height: 40px;
@@ -271,46 +269,16 @@ h2 {
   cursor: pointer;
 }
 
-.scenario-list button:hover:not([aria-pressed="true"]),
 .role-filter button:hover:not([aria-pressed="true"]),
 .icon-text-button:hover:not(:disabled) {
   border-color: var(--defense);
 }
 
-.scenario-list button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  text-align: left;
-  line-height: 1.35;
-}
-
-.scenario-list span {
-  display: inline-grid;
-  flex: 0 0 24px;
-  width: 24px;
-  height: 24px;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--surface);
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.scenario-list button[aria-pressed="true"],
 .role-filter button[aria-pressed="true"] {
   border-color: var(--defense);
   background: rgba(51, 177, 255, 0.14);
   color: var(--defense);
   font-weight: 700;
-}
-
-.scenario-list button[aria-pressed="true"] span {
-  background: var(--defense);
-  color: #071019;
 }
 
 .role-filter {
@@ -832,10 +800,6 @@ noscript {
 }
 
 @media (min-width: 1200px) {
-  .scenario-list {
-    grid-template-columns: 1fr 1fr;
-  }
-
   .responsibility-card p,
   .principle,
   .coach-note {
